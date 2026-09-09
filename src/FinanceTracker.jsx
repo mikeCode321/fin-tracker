@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 // Kept configurable so you can update these as tax/benchmark data changes.
@@ -1257,18 +1257,6 @@ export default function App() {
     initCash,
     cashRate,
     projYears,
-    projection: calc?.proj || null,
-    currentMetrics: calc
-      ? {
-          grossSalary,
-          takeHome: calc.netMonthly,
-          roth: rothBalance,
-          k401: k401Balance,
-          brokerage: brokerageBalance,
-          cash: initCash,
-          total: currentNetWorth,
-        }
-      : null,
   });
 
   const applySimulation = (sim) => {
@@ -1324,45 +1312,78 @@ export default function App() {
     initCash: 0,
     cashRate: 4,
     projYears: 20,
-    projection: null,
-    currentMetrics: null,
   });
 
+  // JSON-file persistence is handled by the small local Node API.
+  // We keep the app state in React and write the latest snapshot every 30 seconds.
+  const hydratedRef = useRef(false);
+  const stateRef = useRef({ simulations: [], activeSimulationId: null });
+  const saveInFlightRef = useRef(false);
+  const [saveStatus, setSaveStatus] = useState("loading");
+
   useEffect(() => {
-    const saved = localStorage.getItem("allocator-simulations");
-    if (saved) {
+    let cancelled = false;
+
+    async function loadSimulationFile() {
       try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length) {
-          const savedActiveId = Number(localStorage.getItem("allocator-active-simulation"));
-          const active = parsed.find((s) => s.id === savedActiveId) || parsed[0];
-          setSimulations(parsed);
+        const response = await fetch("http://localhost:3001/api/simulation");
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const parsed = await response.json();
+        if (cancelled) return;
+
+        if (Array.isArray(parsed.simulations) && parsed.simulations.length) {
+          const active =
+            parsed.simulations.find((s) => s.id === parsed.activeSimulationId) ||
+            parsed.simulations[0];
+
+          setSimulations(parsed.simulations);
           setActiveSimulationId(active.id);
           applySimulation(active);
-          return;
+        } else {
+          const initial = freshSimulation(Date.now(), "Simulation 1");
+          setActiveSimulationId(initial.id);
+          setSimulationName(initial.name);
+          setSimulations([initial]);
         }
-      } catch {
-        // Start fresh if stored data is invalid.
+
+        hydratedRef.current = true;
+        setSaveStatus("saved");
+      } catch (error) {
+        console.error("Could not load simulation.json:", error);
+        if (!cancelled) {
+          const initial = freshSimulation(Date.now(), "Simulation 1");
+          setActiveSimulationId(initial.id);
+          setSimulationName(initial.name);
+          setSimulations([initial]);
+          hydratedRef.current = true;
+          setSaveStatus("error");
+        }
       }
     }
 
-    const initial = freshSimulation(Date.now(), "Simulation 1");
-    setActiveSimulationId(initial.id);
-    localStorage.setItem("allocator-active-simulation", String(initial.id));
-    setSimulationName(initial.name);
-    setSimulations([initial]);
+    loadSimulationFile();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  // Keep the latest React state available to the fixed 30-second save timer.
   useEffect(() => {
-    if (activeSimulationId == null) return;
-    localStorage.setItem("allocator-active-simulation", String(activeSimulationId));
-    const current = getCurrentSimulation();
+    if (!hydratedRef.current || activeSimulationId == null) return;
 
+    const current = getCurrentSimulation();
     setSimulations((prev) => {
       const next = prev.some((s) => s.id === activeSimulationId)
         ? prev.map((s) => (s.id === activeSimulationId ? current : s))
         : [...prev, current];
-      localStorage.setItem("allocator-simulations", JSON.stringify(next));
+
+      stateRef.current = {
+        simulations: next,
+        activeSimulationId,
+      };
+
       return next;
     });
   }, [
@@ -1372,6 +1393,42 @@ export default function App() {
     rothContrib, rothBalance, rothRate, brokerageContrib, brokerageBalance,
     brokerageRate, initCash, cashRate, projYears,
   ]);
+
+  // Save to data/simulation.json every 30 seconds.
+  useEffect(() => {
+    const saveToDisk = async () => {
+      if (!hydratedRef.current || saveInFlightRef.current) return;
+
+      const payload = stateRef.current;
+      if (!payload.activeSimulationId || !payload.simulations.length) return;
+
+      saveInFlightRef.current = true;
+      setSaveStatus("saving");
+
+      try {
+        const response = await fetch("http://localhost:3001/api/simulation", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            version: 1,
+            simulations: payload.simulations,
+            activeSimulationId: payload.activeSimulationId,
+          }),
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        setSaveStatus("saved");
+      } catch (error) {
+        console.error("Could not save simulation.json:", error);
+        setSaveStatus("error");
+      } finally {
+        saveInFlightRef.current = false;
+      }
+    };
+
+    const timer = window.setInterval(saveToDisk, 10000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const createNewSimulation = () => {
     const id = nextId();
@@ -1383,12 +1440,10 @@ export default function App() {
         s.id === activeSimulationId ? current : s
       );
       const next = [...saved, fresh];
-      localStorage.setItem("allocator-simulations", JSON.stringify(next));
       return next;
     });
 
     setActiveSimulationId(id);
-    localStorage.setItem("allocator-active-simulation", String(id));
     applySimulation(fresh);
   };
 
@@ -1402,7 +1457,6 @@ export default function App() {
       prev.map((s) => (s.id === activeSimulationId ? current : s))
     );
     setActiveSimulationId(id);
-    localStorage.setItem("allocator-active-simulation", String(id));
     applySimulation(target);
   };
 
@@ -1417,11 +1471,9 @@ export default function App() {
     const nextActiveId = id === activeSimulationId ? remaining[0].id : activeSimulationId;
     setSimulations(remaining);
     setCompareSimulationIds((ids) => ids.filter((simId) => simId !== id));
-    localStorage.setItem("allocator-simulations", JSON.stringify(remaining));
     if (id === activeSimulationId) {
       const next = remaining.find((s) => s.id === nextActiveId) || remaining[0];
       setActiveSimulationId(next.id);
-      localStorage.setItem("allocator-active-simulation", String(next.id));
       applySimulation(next);
     }
   };
@@ -1927,8 +1979,7 @@ export default function App() {
                 }}
               >
                 Personal finance &
-                investment tracker — all
-                local, no server
+                investment tracker — local JSON storage
               </div>
             </div>
 
@@ -1936,12 +1987,44 @@ export default function App() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 6,
+                gap: 10,
                 maxWidth: "100%",
-                overflowX: "auto",
-                padding: "2px",
               }}
             >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color:
+                    saveStatus === "error"
+                      ? "var(--red)"
+                      : saveStatus === "saving"
+                        ? "var(--yellow)"
+                        : saveStatus === "loading"
+                          ? "var(--muted)"
+                          : "var(--green)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {saveStatus === "loading"
+                  ? "Loading…"
+                  : saveStatus === "saving"
+                    ? "Saving…"
+                    : saveStatus === "error"
+                      ? "Save failed"
+                      : "Saved"}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  maxWidth: "100%",
+                  overflowX: "auto",
+                  padding: "2px",
+                }}
+              >
               {simulations.map((sim, index) => (
                 <button
                   key={sim.id}
@@ -2007,6 +2090,7 @@ export default function App() {
               >
                 +
               </button>
+              </div>
             </div>
 
             <div
