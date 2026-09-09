@@ -169,8 +169,7 @@ function projectAll({
 
     const total = roth + k401 + brokerage + cash;
 
-    if ([1, 5, 10, 20, 30].includes(y) || y === years) {
-      snapshots.push({
+    snapshots.push({
         year: y,
         gross,
         takeHome: takeHomeAnnual / 12,
@@ -185,7 +184,6 @@ function projectAll({
         annualBrokerage: yearlyBrokerage,
         annualLeftover: yearlyLeftover,
       });
-    }
   }
 
   return {
@@ -839,6 +837,297 @@ function SnapshotTable({ snapshots }) {
   );
 }
 
+function buildProjectionFromSimulation(sim) {
+  const expenses = Array.isArray(sim.expenses) ? sim.expenses : [];
+  const totalExpenses = expenses.reduce((sum, e) => sum + Math.max(Number(e.amount) || 0, 0), 0);
+  const grossSalary = Number(sim.grossSalary) || 0;
+  const k401Annual = Math.min((Number(sim.k401Pct) || 0) / 100 * grossSalary, K401_LIMIT);
+  const taxableIncome = Math.max(grossSalary - k401Annual, 0);
+  const federalTax = estimateFederalTax(taxableIncome);
+  const stateTax = taxableIncome * ((Number(sim.stateRate) || 0) / 100);
+  const fica = grossSalary * 0.0765;
+  const calculatedNetMonthly = (grossSalary - k401Annual - federalTax - stateTax - fica) / 12;
+  const netMonthly = sim.incomeMode === "prefill"
+    ? Number(sim.actualTakeHome) || 0
+    : calculatedNetMonthly;
+  const netAnnual = netMonthly * 12;
+  const matchPct = Math.min(Number(sim.employerMatch) || 0, Number(sim.employerMatchMax) || 0) / 100;
+  const employerMatchAmt = grossSalary * matchPct;
+  const rothMonthly = Math.min(Math.max(Number(sim.rothContrib) || 0, 0), ROTH_LIMIT / 12);
+  const rothAnnual = rothMonthly * 12;
+  const brokerageAnnual = Math.max(Number(sim.brokerageContrib) || 0, 0) * 12;
+  const leftoverAnnual = (netMonthly - totalExpenses - rothMonthly - Math.max(Number(sim.brokerageContrib) || 0, 0)) * 12;
+
+  return projectAll({
+    annualRoth: rothAnnual,
+    annualK401: k401Annual,
+    annualBrokerage: brokerageAnnual,
+    annualLeftover: leftoverAnnual,
+    years: Number(sim.projYears) || 20,
+    rothRate: (Number(sim.rothRate) || 0) / 100,
+    k401Rate: (Number(sim.k401Rate) || 0) / 100,
+    brokerageRate: (Number(sim.brokerageRate) || 0) / 100,
+    cashRate: (Number(sim.cashRate) || 0) / 100,
+    initRoth: sim.rothBalance,
+    initK401: sim.k401Balance,
+    initBrokerage: sim.brokerageBalance,
+    initCash: sim.initCash,
+    salaryGrowth: (Number(sim.salaryGrowth) || 0) / 100,
+    contributionGrowth: !!sim.contributionGrowth,
+    initialGross: grossSalary,
+    initialTakeHome: netAnnual,
+    incomeMode: sim.incomeMode,
+    stateRate: Number(sim.stateRate) || 0,
+    k401Pct: Number(sim.k401Pct) || 0,
+    employerMatch: Number(sim.employerMatch) || 0,
+    employerMatchMax: Number(sim.employerMatchMax) || 0,
+  });
+}
+
+// ─── COMPARISON VIEW ──────────────────────────────────────────────────────────
+function CompareView({
+  simulations,
+  compareSimulationIds,
+  setCompareSimulationIds,
+  compareMetricKeys,
+  compareMetrics,
+  graphMetricKey,
+  selectGraphMetric,
+  toggleCompareSimulation,
+  toggleCompareMetric,
+}) {
+  const selectedIds = compareSimulationIds.length
+    ? compareSimulationIds
+    : simulations.map((s) => s.id);
+  const selectedSims = simulations.filter((s) => selectedIds.includes(s.id));
+  const metricMap = Object.fromEntries(compareMetrics.map((m) => [m.key, m]));
+
+  const getSeriesValue = (snapshot, key) => snapshot?.[key] ?? 0;
+  const snapshots = selectedSims.reduce((all, sim) => {
+    (sim.projection?.snapshots || buildProjectionFromSimulation(sim).snapshots).forEach((snapshot) => {
+      if (!all.some((x) => x.year === snapshot.year)) all.push({ year: snapshot.year });
+    });
+    return all;
+  }, []).sort((a, b) => a.year - b.year);
+
+  const finalYear = snapshots[snapshots.length - 1]?.year || 0;
+
+  return (
+    <div>
+      <Card title="Compare simulations" accent>
+        <div style={{ color: "var(--muted)", fontSize: 13, marginBottom: 16 }}>
+          Compare saved scenarios side by side. Choose which simulations and metrics appear in the graph and table.
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <Label>Simulations</Label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <button
+              onClick={() => setCompareSimulationIds([])}
+              style={{
+                padding: "7px 10px",
+                borderRadius: 8,
+                border: "1px solid var(--border)",
+                background: compareSimulationIds.length === 0 ? "var(--accent-dim)" : "var(--input-bg)",
+                color: compareSimulationIds.length === 0 ? "var(--accent)" : "var(--muted)",
+                cursor: "pointer",
+                fontWeight: 700,
+                fontSize: 12,
+              }}
+            >
+              All simulations
+            </button>
+            {simulations.map((sim) => {
+              const active = selectedIds.includes(sim.id);
+              return (
+                <button
+                  key={sim.id}
+                  onClick={() => toggleCompareSimulation(sim.id)}
+                  style={{
+                    padding: "7px 10px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                    background: active ? "var(--accent-dim)" : "var(--input-bg)",
+                    color: active ? "var(--accent)" : "var(--muted)",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: 12,
+                  }}
+                >
+                  {active ? "✓ " : ""}{sim.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <Label>Table metrics</Label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {compareMetrics.map((metric) => {
+              const active = compareMetricKeys.includes(metric.key);
+              return (
+                <button
+                  key={metric.key}
+                  onClick={() => toggleCompareMetric(metric.key)}
+                  style={{
+                    padding: "7px 10px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                    background: active ? "var(--accent-dim)" : "var(--input-bg)",
+                    color: active ? "var(--text)" : "var(--muted)",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: 12,
+                  }}
+                >
+                  {active ? "✓ " : ""}{metric.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <Label>Graph metric</Label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {compareMetrics.map((metric) => {
+              const active = graphMetricKey === metric.key;
+              return (
+                <button
+                  key={`graph-${metric.key}`}
+                  onClick={() => selectGraphMetric(metric.key)}
+                  style={{
+                    padding: "7px 10px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                    background: active ? "var(--accent-dim)" : "var(--input-bg)",
+                    color: active ? "var(--text)" : "var(--muted)",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: 12,
+                  }}
+                >
+                  {active ? "● " : ""}{metric.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </Card>
+
+      {selectedSims.length === 0 ? (
+        <Card title="No simulations selected">
+          <div style={{ color: "var(--muted)", fontSize: 13 }}>Select at least one simulation to compare.</div>
+        </Card>
+      ) : (
+        <>
+          <Card title="Growth graph" accent>
+            <div style={{ color: "var(--muted)", fontSize: 12, marginBottom: 12 }}>
+              Each line represents a selected simulation for the chosen metric. Keeping one metric on the graph makes differences easier to read when income and account balances have very different scales.
+            </div>
+            <ComparisonChart simulations={selectedSims} metricKey={graphMetricKey} metric={metricMap[graphMetricKey]} />
+          </Card>
+
+          <Card title={`Comparison table${finalYear ? ` — through year ${finalYear}` : ""}`}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 700 }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left", padding: "7px 8px", color: "var(--muted)", borderBottom: "1px solid var(--border)" }}>Year</th>
+                    {selectedSims.flatMap((sim) => compareMetricKeys.map((key) => (
+                      <th key={`${sim.id}-${key}`} style={{ textAlign: "right", padding: "7px 8px", color: metricMap[key].color, borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>
+                        {sim.name} · {metricMap[key].label}
+                      </th>
+                    )))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {snapshots.map((row) => (
+                    <tr key={row.year}>
+                      <td style={{ padding: "7px 8px", color: "var(--muted)", borderBottom: "1px solid var(--border)" }}>Yr {row.year}</td>
+                      {selectedSims.flatMap((sim) => compareMetricKeys.map((key) => {
+                        const snapshot = (sim.projection?.snapshots || buildProjectionFromSimulation(sim).snapshots).find((s) => s.year === row.year);
+                        return (
+                          <td key={`${sim.id}-${key}-${row.year}`} style={{ textAlign: "right", padding: "7px 8px", borderBottom: "1px solid var(--border)", fontWeight: 650 }}>
+                            {fmt(getSeriesValue(snapshot, key))}
+                          </td>
+                        );
+                      }))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ComparisonChart({ simulations, metricKey, metric }) {
+  const width = 960;
+  const height = 420;
+  const pad = { left: 58, right: 24, top: 24, bottom: 42 };
+  const innerW = width - pad.left - pad.right;
+  const innerH = height - pad.top - pad.bottom;
+  const getSnapshots = (sim) => sim.projection?.snapshots || buildProjectionFromSimulation(sim).snapshots;
+  const maxYear = Math.max(1, ...simulations.flatMap((sim) => getSnapshots(sim).map((x) => x.year)));
+  const points = simulations.flatMap((sim) => getSnapshots(sim).map((s) => Number(s[metricKey]) || 0));
+  const maxValue = Math.max(1, ...points);
+  const minValue = Math.min(0, ...points);
+  const valueRange = Math.max(1, maxValue - minValue);
+  const x = (year) => pad.left + (year / maxYear) * innerW;
+  const y = (value) => pad.top + innerH - ((value - minValue) / valueRange) * innerH;
+  const ticks = 5;
+  const dash = ["0", "7 5", "2 4", "10 5 2 5", "14 5 2 5 2 5"];
+
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", minWidth: 680, height: "auto", display: "block" }} role="img" aria-label={`${metric?.label || metricKey} simulation comparison chart`}>
+        {Array.from({ length: ticks + 1 }, (_, i) => {
+          const value = minValue + (valueRange / ticks) * i;
+          const yy = y(value);
+          return (
+            <g key={i}>
+              <line x1={pad.left} x2={width - pad.right} y1={yy} y2={yy} stroke="var(--border)" />
+              <text x={pad.left - 8} y={yy + 4} textAnchor="end" fill="var(--muted)" fontSize="10">{fmt(value)}</text>
+            </g>
+          );
+        })}
+        <line x1={pad.left} x2={pad.left} y1={pad.top} y2={height - pad.bottom} stroke="var(--border)" />
+        <line x1={pad.left} x2={width - pad.right} y1={height - pad.bottom} y2={height - pad.bottom} stroke="var(--border)" />
+        <text x={pad.left} y={height - 14} fill="var(--muted)" fontSize="10">Year 0</text>
+        <text x={width - pad.right} y={height - 14} textAnchor="end" fill="var(--muted)" fontSize="10">Year {maxYear}</text>
+        {simulations.map((sim, seriesIndex) => {
+          const snapshots = getSnapshots(sim);
+          const d = snapshots.map((s, i) => `${i === 0 ? "M" : "L"} ${x(s.year)} ${y(Number(s[metricKey]) || 0)}`).join(" ");
+          return (
+            <path
+              key={`${sim.id}-${metricKey}`}
+              d={d}
+              fill="none"
+              stroke={metric?.color || "var(--accent)"}
+              strokeWidth="2.8"
+              strokeDasharray={dash[seriesIndex % dash.length]}
+              opacity="0.95"
+            />
+          );
+        })}
+      </svg>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 14px", padding: "4px 4px 0", fontSize: 11 }}>
+        {simulations.map((sim, i) => (
+          <div key={`${sim.id}-legend`} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)" }}>
+            <span style={{ width: 18, height: 2, display: "inline-block", background: metric?.color || "var(--accent)" }} />
+            <span>{sim.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("income");
@@ -928,6 +1217,19 @@ export default function App() {
   const [simulationName, setSimulationName] = useState("Simulation 1");
   const [simulations, setSimulations] = useState([]);
   const [activeSimulationId, setActiveSimulationId] = useState(null);
+  const [compareMetricKeys, setCompareMetricKeys] = useState(["total", "roth", "k401", "brokerage", "cash"]);
+  const [graphMetricKey, setGraphMetricKey] = useState("total");
+  const [compareSimulationIds, setCompareSimulationIds] = useState([]);
+
+  const compareMetrics = [
+    { key: "total", label: "Total net worth", color: "var(--accent)" },
+    { key: "roth", label: "Roth IRA", color: "var(--green)" },
+    { key: "k401", label: "401k", color: "var(--yellow)" },
+    { key: "brokerage", label: "Brokerage", color: "#c084fc" },
+    { key: "cash", label: "Cash", color: "#fb7185" },
+    { key: "gross", label: "Gross income", color: "#38bdf8" },
+    { key: "takeHome", label: "Take-home", color: "#a3e635" },
+  ];
 
   const getCurrentSimulation = () => ({
     id: activeSimulationId,
@@ -955,6 +1257,18 @@ export default function App() {
     initCash,
     cashRate,
     projYears,
+    projection: calc?.proj || null,
+    currentMetrics: calc
+      ? {
+          grossSalary,
+          takeHome: calc.netMonthly,
+          roth: rothBalance,
+          k401: k401Balance,
+          brokerage: brokerageBalance,
+          cash: initCash,
+          total: currentNetWorth,
+        }
+      : null,
   });
 
   const applySimulation = (sim) => {
@@ -1010,6 +1324,8 @@ export default function App() {
     initCash: 0,
     cashRate: 4,
     projYears: 20,
+    projection: null,
+    currentMetrics: null,
   });
 
   useEffect(() => {
@@ -1018,7 +1334,8 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length) {
-          const active = parsed[0];
+          const savedActiveId = Number(localStorage.getItem("allocator-active-simulation"));
+          const active = parsed.find((s) => s.id === savedActiveId) || parsed[0];
           setSimulations(parsed);
           setActiveSimulationId(active.id);
           applySimulation(active);
@@ -1031,12 +1348,14 @@ export default function App() {
 
     const initial = freshSimulation(Date.now(), "Simulation 1");
     setActiveSimulationId(initial.id);
+    localStorage.setItem("allocator-active-simulation", String(initial.id));
     setSimulationName(initial.name);
     setSimulations([initial]);
   }, []);
 
   useEffect(() => {
     if (activeSimulationId == null) return;
+    localStorage.setItem("allocator-active-simulation", String(activeSimulationId));
     const current = getCurrentSimulation();
 
     setSimulations((prev) => {
@@ -1069,6 +1388,7 @@ export default function App() {
     });
 
     setActiveSimulationId(id);
+    localStorage.setItem("allocator-active-simulation", String(id));
     applySimulation(fresh);
   };
 
@@ -1082,10 +1402,45 @@ export default function App() {
       prev.map((s) => (s.id === activeSimulationId ? current : s))
     );
     setActiveSimulationId(id);
+    localStorage.setItem("allocator-active-simulation", String(id));
     applySimulation(target);
   };
 
   const renameSimulation = (name) => setSimulationName(name);
+
+  const deleteSimulation = (id) => {
+    if (simulations.length <= 1) return;
+    const target = simulations.find((s) => s.id === id);
+    if (!target) return;
+    if (window.confirm(`Delete “${target.name || "this simulation"}”? This cannot be undone.`) === false) return;
+    const remaining = simulations.filter((s) => s.id !== id);
+    const nextActiveId = id === activeSimulationId ? remaining[0].id : activeSimulationId;
+    setSimulations(remaining);
+    setCompareSimulationIds((ids) => ids.filter((simId) => simId !== id));
+    localStorage.setItem("allocator-simulations", JSON.stringify(remaining));
+    if (id === activeSimulationId) {
+      const next = remaining.find((s) => s.id === nextActiveId) || remaining[0];
+      setActiveSimulationId(next.id);
+      localStorage.setItem("allocator-active-simulation", String(next.id));
+      applySimulation(next);
+    }
+  };
+
+  const toggleCompareSimulation = (id) => {
+    setCompareSimulationIds((ids) =>
+      ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]
+    );
+  };
+
+  const toggleCompareMetric = (key) => {
+    setCompareMetricKeys((keys) =>
+      keys.includes(key)
+        ? keys.length === 1 ? keys : keys.filter((x) => x !== key)
+        : [...keys, key]
+    );
+  };
+
+  const selectGraphMetric = (key) => setGraphMetricKey(key);
 
   const calc = useMemo(() => {
     const k401Annual = Math.min(
@@ -1610,7 +1965,26 @@ export default function App() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {sim.name || `Simulation ${index + 1}`}
+                  <span>{sim.name || `Simulation ${index + 1}`}</span>
+                  {simulations.length > 1 && (
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteSimulation(sim.id);
+                      }}
+                      role="button"
+                      aria-label={`Delete ${sim.name || `Simulation ${index + 1}`}`}
+                      title="Delete simulation"
+                      style={{
+                        marginLeft: 8,
+                        color: "var(--muted)",
+                        fontSize: 14,
+                        lineHeight: 1,
+                      }}
+                    >
+                      ×
+                    </span>
+                  )}
                 </button>
               ))}
               <button
@@ -1652,6 +2026,7 @@ export default function App() {
                 "expenses",
                 "invest",
                 "outlook",
+                "compare",
               ].map((t) => (
                 <Tab
                   key={t}
@@ -1661,6 +2036,7 @@ export default function App() {
                       expenses: "Expenses",
                       invest: "Investments",
                       outlook: "Outlook",
+                      compare: "Compare",
                     }[t]
                   }
                   active={tab === t}
@@ -1943,6 +2319,20 @@ export default function App() {
           </Card>
 
           {/* INCOME */}
+          {tab === "compare" && (
+            <CompareView
+              simulations={simulations}
+              compareSimulationIds={compareSimulationIds}
+              setCompareSimulationIds={setCompareSimulationIds}
+              compareMetricKeys={compareMetricKeys}
+              compareMetrics={compareMetrics}
+              graphMetricKey={graphMetricKey}
+              selectGraphMetric={selectGraphMetric}
+              toggleCompareSimulation={toggleCompareSimulation}
+              toggleCompareMetric={toggleCompareMetric}
+            />
+          )}
+
           {tab === "income" && (
             <div
               className="two-col"
