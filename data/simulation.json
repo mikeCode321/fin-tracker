@@ -5,18 +5,17 @@
       "id": 1789089569691,
       "name": "Simulation 1",
       "tab": "compare",
-      "incomeMode": "prefill",
       "actualTakeHome": 8000,
-      "grossSalary": 85000,
+      "grossSalary": 135000,
       "stateRate": 5,
       "salaryGrowth": 3,
       "contributionGrowth": true,
       "age": 30,
-      "k401Pct": 6,
-      "employerMatch": 3,
-      "employerMatchMax": 3,
+      "k401Pct": 7,
+      "employerMatch": 50,
+      "employerMatchMax": 6,
       "k401Balance": 0,
-      "k401Rate": 7,
+      "k401Rate": 10,
       "expenses": [
         {
           "id": 1,
@@ -49,73 +48,15 @@
           "amount": 80
         }
       ],
-      "rothContrib": 500,
-      "rothBalance": 0,
-      "rothRate": 7,
-      "brokerageContrib": 300,
+      "rothContrib": 625,
+      "rothBalance": 10000,
+      "rothRate": 10,
+      "brokerageContrib": 3300,
       "brokerageBalance": 0,
-      "brokerageRate": 7,
-      "initCash": 0,
+      "brokerageRate": 10,
+      "initCash": 100007,
       "cashRate": 4,
-      "projYears": 20
-    },
-    {
-      "id": 1789091588031,
-      "name": "Simulation 2",
-      "tab": "income",
-      "incomeMode": "prefill",
-      "actualTakeHome": 3000,
-      "grossSalary": 85000,
-      "stateRate": 5,
-      "salaryGrowth": 3,
-      "contributionGrowth": true,
-      "age": 30,
-      "k401Pct": 6,
-      "employerMatch": 3,
-      "employerMatchMax": 3,
-      "k401Balance": 0,
-      "k401Rate": 7,
-      "expenses": [
-        {
-          "id": 1,
-          "name": "Rent / Mortgage",
-          "category": "Housing",
-          "amount": 1230
-        },
-        {
-          "id": 2,
-          "name": "Groceries",
-          "category": "Food",
-          "amount": 400
-        },
-        {
-          "id": 3,
-          "name": "Car + gas",
-          "category": "Transport",
-          "amount": 550
-        },
-        {
-          "id": 4,
-          "name": "Utilities",
-          "category": "Utilities",
-          "amount": 150
-        },
-        {
-          "id": 5,
-          "name": "Phone",
-          "category": "Subscriptions",
-          "amount": 80
-        }
-      ],
-      "rothContrib": 500,
-      "rothBalance": 0,
-      "rothRate": 7,
-      "brokerageContrib": 300,
-      "brokerageBalance": 0,
-      "brokerageRate": 7,
-      "initCash": 0,
-      "cashRate": 4,
-      "projYears": 20
+      "projYears": 30
     },
     {
       "id": 1789091593169,
