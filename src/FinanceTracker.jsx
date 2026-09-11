@@ -494,11 +494,10 @@ const HealthMetric = ({
   value,
   target,
   status,
-  note,
 }) => (
   <div
     style={{
-      padding: "12px 0",
+      padding: "7px 0",
       borderBottom: "1px solid var(--border)",
     }}
   >
@@ -507,15 +506,18 @@ const HealthMetric = ({
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        gap: 10,
+        gap: 8,
       }}
     >
-      <div>
+      <div style={{ minWidth: 0 }}>
         <div
           style={{
-            fontSize: 13,
+            fontSize: 11,
             fontWeight: 600,
             color: "var(--text)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
           {label}
@@ -523,19 +525,24 @@ const HealthMetric = ({
 
         <div
           style={{
-            fontSize: 11,
+            fontSize: 9,
             color: "var(--muted)",
-            marginTop: 2,
+            marginTop: 1,
           }}
         >
-          Target: {target}
+          Target {target}
         </div>
       </div>
 
-      <div style={{ textAlign: "right" }}>
+      <div
+        style={{
+          textAlign: "right",
+          flexShrink: 0,
+        }}
+      >
         <div
           style={{
-            fontSize: 15,
+            fontSize: 13,
             fontWeight: 800,
             color: statusColor(status),
           }}
@@ -545,7 +552,7 @@ const HealthMetric = ({
 
         <div
           style={{
-            fontSize: 10,
+            fontSize: 9,
             color: statusColor(status),
             fontWeight: 700,
           }}
@@ -554,19 +561,6 @@ const HealthMetric = ({
         </div>
       </div>
     </div>
-
-    {note && (
-      <div
-        style={{
-          fontSize: 11,
-          color: "var(--muted)",
-          marginTop: 6,
-          lineHeight: 1.45,
-        }}
-      >
-        {note}
-      </div>
-    )}
   </div>
 );
 
@@ -884,6 +878,259 @@ function buildProjectionFromSimulation(sim) {
   });
 }
 
+
+function CollapsibleYearTable({ snapshots, projYears, age, finalAge, salaryGrowth, cashRate }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div
+        style={{
+          background: "var(--card)",
+          borderRadius: 12,
+          border: "1px solid var(--accent)",
+          boxShadow: "0 0 0 1px var(--accent-dim)",
+          overflow: "hidden",
+        }}
+      >
+        <button
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            width: "100%",
+            padding: "16px 22px",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>
+            Year-by-year breakdown — {projYears} year projection
+          </span>
+          <span style={{ fontSize: 18, color: "var(--accent)", lineHeight: 1, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+            ▾
+          </span>
+        </button>
+        {open && (
+          <div style={{ padding: "0 22px 18px" }}>
+            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
+              Starting age: {age}. Final age: {finalAge}. Salary grows {salaryGrowth}% annually. Cash earns {cashRate}% APY.
+            </div>
+            <SnapshotTable snapshots={snapshots} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ─── FLOATING HEALTH PANEL ────────────────────────────────────────────────────
+function FloatingHealthPanel({ calc, pct, getHealthStatus, statusColor, statusLabel }) {
+  const [open, setOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 860);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const score = calc.healthScore;
+  const scoreColor = score >= 85 ? "var(--green)" : score >= 70 ? "var(--yellow)" : "var(--red)";
+
+  const metrics = [
+    {
+      label: "Housing",
+      value: pct(calc.housingTakeHomeRatio),
+      target: "< 30%",
+      status: getHealthStatus(calc.housingTakeHomeRatio, { good: 0.3, watch: 0.35 }, true),
+    },
+    {
+      label: "Expenses",
+      value: pct(calc.expenseRatio),
+      target: "< 50%",
+      status: getHealthStatus(calc.expenseRatio, { good: 0.5, watch: 0.6 }, true),
+    },
+    {
+      label: "Investing",
+      value: pct(calc.investmentGrossRatio),
+      target: "≥ 15%",
+      status: calc.investmentGrossRatio >= 0.15 ? "healthy" : calc.investmentGrossRatio >= 0.10 ? "watch" : "low",
+    },
+    {
+      label: "Cash buffer",
+      value: pct(calc.surplusRatio),
+      target: "≥ 10%",
+      status: calc.surplusRatio >= 0.1 ? "healthy" : calc.surplusRatio >= 0 ? "watch" : "low",
+    },
+    {
+      label: "Debt",
+      value: pct(calc.debtToIncome),
+      target: "< 20%",
+      status: getHealthStatus(calc.debtToIncome, { good: 0.2, watch: 0.36 }, true),
+    },
+    {
+      label: "Emergency",
+      value: `${Math.min(calc.emergencyFunding * 100, 999).toFixed(0)}%`,
+      target: "6 months",
+      status: calc.emergencyFunding >= 1 ? "healthy" : calc.emergencyFunding >= 0.5 ? "watch" : "low",
+    },
+  ];
+
+  const panelContent = (
+    <div style={{ padding: "0 16px 16px" }}>
+      {/* Score row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid var(--border)", marginBottom: 8 }}>
+        <div>
+          <div style={{ fontSize: 9, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Overall score</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: scoreColor, lineHeight: 1.1, marginTop: 2 }}>
+            {score}<span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 500 }}>/100</span>
+          </div>
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: scoreColor }}>{calc.healthLabel}</div>
+      </div>
+      {metrics.map((m) => (
+        <HealthMetric key={m.label} label={m.label} value={m.value} target={m.target} status={m.status} />
+      ))}
+    </div>
+  );
+
+  if (isMobile) {
+    // Mobile: sticky button + slide-up drawer
+    return (
+      <>
+        {/* Floating button */}
+        <button
+          onClick={() => setOpen((v) => !v)}
+          style={{
+            position: "fixed",
+            bottom: 20,
+            right: 20,
+            zIndex: 200,
+            width: 52,
+            height: 52,
+            borderRadius: "50%",
+            border: `2px solid ${scoreColor}`,
+            background: "var(--card)",
+            color: scoreColor,
+            fontSize: 11,
+            fontWeight: 800,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
+            boxShadow: `0 0 0 4px ${scoreColor}22, 0 4px 24px rgba(0,0,0,0.5)`,
+            lineHeight: 1.1,
+          }}
+        >
+          <span style={{ fontSize: 15 }}>❤</span>
+          <span>{score}</span>
+        </button>
+
+        {/* Backdrop */}
+        {open && (
+          <div
+            onClick={() => setOpen(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 199, background: "rgba(0,0,0,0.5)" }}
+          />
+        )}
+
+        {/* Drawer */}
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 200,
+            background: "var(--card)",
+            borderTop: `2px solid ${scoreColor}`,
+            borderRadius: "16px 16px 0 0",
+            transform: open ? "translateY(0)" : "translateY(105%)",
+            transition: "transform 0.28s cubic-bezier(0.32,0.72,0,1)",
+            maxHeight: "80vh",
+            overflowY: "auto",
+          }}
+        >
+          <div style={{ padding: "12px 16px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
+              Financial Health <span style={{ fontSize: 11, background: "var(--accent-dim)", color: "var(--accent)", borderRadius: 99, padding: "1px 8px", marginLeft: 6 }}>{score}/100</span>
+            </div>
+            <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 22, cursor: "pointer", padding: "0 4px" }}>×</button>
+          </div>
+          {panelContent}
+        </div>
+      </>
+    );
+  }
+
+  // Desktop: fixed floating panel on the right
+  return (
+    <>
+      {/* Toggle button when collapsed */}
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          style={{
+            position: "fixed",
+            top: "50%",
+            right: 0,
+            zIndex: 200,
+            transform: "translateY(-50%)",
+            background: "var(--card)",
+            border: `1px solid ${scoreColor}`,
+            borderRight: "none",
+            borderRadius: "10px 0 0 10px",
+            padding: "12px 8px",
+            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 6,
+            boxShadow: `-2px 0 16px rgba(0,0,0,0.3)`,
+          }}
+        >
+          <span style={{ fontSize: 11, fontWeight: 800, color: scoreColor }}>{score}</span>
+          <span style={{ fontSize: 9, color: "var(--muted)", writingMode: "vertical-rl", textOrientation: "mixed", letterSpacing: "0.08em", textTransform: "uppercase" }}>Health</span>
+          <span style={{ fontSize: 10, color: scoreColor }}>◂</span>
+        </button>
+      )}
+
+      {/* Floating panel */}
+      <div
+        style={{
+          position: "fixed",
+          top: 70,
+          right: open ? 0 : -320,
+          width: 300,
+          zIndex: 200,
+          background: "var(--card)",
+          border: `1px solid ${scoreColor}`,
+          borderRight: "none",
+          borderRadius: "12px 0 0 12px",
+          boxShadow: "-4px 0 32px rgba(0,0,0,0.4)",
+          transition: "right 0.25s cubic-bezier(0.32,0.72,0,1)",
+          maxHeight: "calc(100vh - 90px)",
+          overflowY: "auto",
+        }}
+      >
+        <div style={{ padding: "12px 16px 0", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "var(--card)", zIndex: 1, borderBottom: "1px solid var(--border)" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+            Financial Health <span style={{ fontSize: 11, background: "var(--accent-dim)", color: "var(--accent)", borderRadius: 99, padding: "1px 8px", marginLeft: 6 }}>{score}/100</span>
+          </div>
+          <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 20, cursor: "pointer", padding: "0 2px" }}>×</button>
+        </div>
+        {panelContent}
+      </div>
+    </>
+  );
+}
+
 // ─── COMPARISON VIEW ──────────────────────────────────────────────────────────
 function CompareView({
   simulations,
@@ -916,10 +1163,9 @@ function CompareView({
     <div>
       <Card title="Compare simulations" accent>
         <div style={{ color: "var(--muted)", fontSize: 13, marginBottom: 16 }}>
-          Compare saved scenarios side by side. Choose which simulations and metrics appear in the graph and table.
+          Compare saved scenarios side by side.
         </div>
-
-        <div style={{ marginBottom: 16 }}>
+        <div>
           <Label>Simulations</Label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <button
@@ -960,60 +1206,6 @@ function CompareView({
             })}
           </div>
         </div>
-
-        <div style={{ marginBottom: 16 }}>
-          <Label>Table metrics</Label>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {compareMetrics.map((metric) => {
-              const active = compareMetricKeys.includes(metric.key);
-              return (
-                <button
-                  key={metric.key}
-                  onClick={() => toggleCompareMetric(metric.key)}
-                  style={{
-                    padding: "7px 10px",
-                    borderRadius: 8,
-                    border: "1px solid var(--border)",
-                    background: active ? "var(--accent-dim)" : "var(--input-bg)",
-                    color: active ? "var(--text)" : "var(--muted)",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    fontSize: 12,
-                  }}
-                >
-                  {active ? "✓ " : ""}{metric.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <Label>Graph metric</Label>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {compareMetrics.map((metric) => {
-              const active = graphMetricKey === metric.key;
-              return (
-                <button
-                  key={`graph-${metric.key}`}
-                  onClick={() => selectGraphMetric(metric.key)}
-                  style={{
-                    padding: "7px 10px",
-                    borderRadius: 8,
-                    border: "1px solid var(--border)",
-                    background: active ? "var(--accent-dim)" : "var(--input-bg)",
-                    color: active ? "var(--text)" : "var(--muted)",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    fontSize: 12,
-                  }}
-                >
-                  {active ? "● " : ""}{metric.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
       </Card>
 
       {selectedSims.length === 0 ? (
@@ -1023,13 +1215,66 @@ function CompareView({
       ) : (
         <>
           <Card title="Growth graph" accent>
-            <div style={{ color: "var(--muted)", fontSize: 12, marginBottom: 12 }}>
-              Each line represents a selected simulation for the chosen metric. Keeping one metric on the graph makes differences easier to read when income and account balances have very different scales.
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ color: "var(--muted)", fontSize: 12, marginBottom: 10 }}>
+                Metric to graph — one metric keeps differences readable across simulations.
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {compareMetrics.map((metric) => {
+                  const active = graphMetricKey === metric.key;
+                  return (
+                    <button
+                      key={`graph-${metric.key}`}
+                      onClick={() => selectGraphMetric(metric.key)}
+                      style={{
+                        padding: "6px 10px",
+                        borderRadius: 8,
+                        border: "1px solid var(--border)",
+                        background: active ? "var(--accent-dim)" : "var(--input-bg)",
+                        color: active ? "var(--text)" : "var(--muted)",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        fontSize: 12,
+                      }}
+                    >
+                      {active ? "● " : ""}{metric.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <ComparisonChart simulations={selectedSims} metricKey={graphMetricKey} metric={metricMap[graphMetricKey]} />
           </Card>
 
           <Card title={`Comparison table${finalYear ? ` — through year ${finalYear}` : ""}`}>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ color: "var(--muted)", fontSize: 12, marginBottom: 10 }}>
+                Table metrics — choose which columns appear in the table below.
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {compareMetrics.map((metric) => {
+                  const active = compareMetricKeys.includes(metric.key);
+                  return (
+                    <button
+                      key={metric.key}
+                      onClick={() => toggleCompareMetric(metric.key)}
+                      style={{
+                        padding: "6px 10px",
+                        borderRadius: 8,
+                        border: "1px solid var(--border)",
+                        background: active ? "var(--accent-dim)" : "var(--input-bg)",
+                        color: active ? "var(--text)" : "var(--muted)",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                        fontSize: 12,
+                      }}
+                    >
+                      {active ? "✓ " : ""}{metric.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 700 }}>
                 <thead>
@@ -1066,10 +1311,20 @@ function CompareView({
   );
 }
 
+function fmtShort(n) {
+  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(0) + "K";
+  return n.toFixed(0);
+}
+
+const SIM_COLORS = [
+  "#6c8ef5", "#4ade80", "#fbbf24", "#f472b6", "#38bdf8", "#fb923c", "#a78bfa",
+];
+
 function ComparisonChart({ simulations, metricKey, metric }) {
   const width = 960;
   const height = 420;
-  const pad = { left: 58, right: 24, top: 24, bottom: 42 };
+  const pad = { left: 78, right: 24, top: 24, bottom: 42 };
   const innerW = width - pad.left - pad.right;
   const innerH = height - pad.top - pad.bottom;
   const getSnapshots = (sim) => sim.projection?.snapshots || buildProjectionFromSimulation(sim).snapshots;
@@ -1092,7 +1347,7 @@ function ComparisonChart({ simulations, metricKey, metric }) {
           return (
             <g key={i}>
               <line x1={pad.left} x2={width - pad.right} y1={yy} y2={yy} stroke="var(--border)" />
-              <text x={pad.left - 8} y={yy + 4} textAnchor="end" fill="var(--muted)" fontSize="10">{fmt(value)}</text>
+              <text x={pad.left - 8} y={yy + 4} textAnchor="end" fill="var(--muted)" fontSize="11">{fmtShort(value)}</text>
             </g>
           );
         })}
@@ -1102,13 +1357,14 @@ function ComparisonChart({ simulations, metricKey, metric }) {
         <text x={width - pad.right} y={height - 14} textAnchor="end" fill="var(--muted)" fontSize="10">Year {maxYear}</text>
         {simulations.map((sim, seriesIndex) => {
           const snapshots = getSnapshots(sim);
+          const color = SIM_COLORS[seriesIndex % SIM_COLORS.length];
           const d = snapshots.map((s, i) => `${i === 0 ? "M" : "L"} ${x(s.year)} ${y(Number(s[metricKey]) || 0)}`).join(" ");
           return (
             <path
               key={`${sim.id}-${metricKey}`}
               d={d}
               fill="none"
-              stroke={metric?.color || "var(--accent)"}
+              stroke={color}
               strokeWidth="2.8"
               strokeDasharray={dash[seriesIndex % dash.length]}
               opacity="0.95"
@@ -1116,10 +1372,10 @@ function ComparisonChart({ simulations, metricKey, metric }) {
           );
         })}
       </svg>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 14px", padding: "4px 4px 0", fontSize: 11 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 14px", padding: "8px 4px 0", fontSize: 12 }}>
         {simulations.map((sim, i) => (
-          <div key={`${sim.id}-legend`} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)" }}>
-            <span style={{ width: 18, height: 2, display: "inline-block", background: metric?.color || "var(--accent)" }} />
+          <div key={`${sim.id}-legend`} style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text)" }}>
+            <span style={{ width: 20, height: 3, display: "inline-block", background: SIM_COLORS[i % SIM_COLORS.length], borderRadius: 2 }} />
             <span>{sim.name}</span>
           </div>
         ))}
@@ -1432,19 +1688,24 @@ export default function App() {
 
   const createNewSimulation = () => {
     const id = nextId();
-    const fresh = freshSimulation(id, `Simulation ${simulations.length + 1}`);
     const current = getCurrentSimulation();
+    // Copy all current values into the new sim, only override id and name
+    const cloned = {
+      ...current,
+      id,
+      name: `Simulation ${simulations.length + 1}`,
+      expenses: (current.expenses || []).map(e => ({ ...e })),
+    };
 
     setSimulations((prev) => {
       const saved = prev.map((s) =>
         s.id === activeSimulationId ? current : s
       );
-      const next = [...saved, fresh];
-      return next;
+      return [...saved, cloned];
     });
 
     setActiveSimulationId(id);
-    applySimulation(fresh);
+    applySimulation(cloned);
   };
 
   const switchSimulation = (id) => {
@@ -2137,54 +2398,7 @@ export default function App() {
             margin: "0 auto",
             padding: "24px 16px",
           }}
-        >
-          {/* SIMULATION CONTROLS */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              marginBottom: 14,
-              padding: "10px 12px",
-              background: "var(--card)",
-              border: "1px solid var(--border)",
-              borderRadius: 10,
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--muted)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                Active simulation
-              </div>
-              <input
-                value={simulationName}
-                onChange={(e) => renameSimulation(e.target.value)}
-                aria-label="Simulation name"
-                style={{
-                  marginTop: 3,
-                  width: "100%",
-                  maxWidth: 320,
-                  padding: "4px 0",
-                  border: "none",
-                  outline: "none",
-                  background: "transparent",
-                  color: "var(--text)",
-                  fontSize: 15,
-                  fontWeight: 800,
-                }}
-              />
-            </div>
-            <div style={{ fontSize: 11, color: "var(--muted)", textAlign: "right" }}>
-              Changes save automatically
-            </div>
-          </div>
+        >       
 
           {/* SUMMARY */}
           <div
@@ -2276,133 +2490,10 @@ export default function App() {
             ))}
           </div>
 
-          {/* FINANCIAL HEALTH */}
-          <Card
-            title="Financial Health"
-            badge={`${calc.healthScore}/100 — ${calc.healthLabel}`}
-            accent
-          >
-            <div
-              className="two-col"
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "1fr 1fr",
-                gap: 22,
-              }}
-            >
-              <div>
-                <HealthMetric
-                  label="Housing / take-home"
-                  value={pct(
-                    calc.housingTakeHomeRatio
-                  )}
-                  target="< 30%"
-                  status={getHealthStatus(
-                    calc.housingTakeHomeRatio,
-                    {
-                      good: 0.3,
-                      watch: 0.35,
-                    },
-                    true
-                  )}
-                  note="Housing is generally easier to sustain when it stays around 30% or less of take-home pay."
-                />
+          {/* FINANCIAL HEALTH - floating panel */}
+          <FloatingHealthPanel calc={calc} pct={pct} getHealthStatus={getHealthStatus} statusColor={statusColor} statusLabel={statusLabel} />
 
-                <HealthMetric
-                  label="Total expenses / take-home"
-                  value={pct(
-                    calc.expenseRatio
-                  )}
-                  target="< 50%"
-                  status={getHealthStatus(
-                    calc.expenseRatio,
-                    {
-                      good: 0.5,
-                      watch: 0.6,
-                    },
-                    true
-                  )}
-                  note="Lower fixed expenses leave more room for investing, emergencies and lifestyle spending."
-                />
-
-                <HealthMetric
-                  label="Investments / gross income"
-                  value={pct(
-                    calc.investmentGrossRatio
-                  )}
-                  target="15–20%+"
-                  status={
-                    calc.investmentGrossRatio >=
-                    0.15
-                      ? "healthy"
-                      : calc.investmentGrossRatio >=
-                        0.10
-                      ? "watch"
-                      : "low"
-                  }
-                  note="This includes your 401k, employer match, Roth IRA and brokerage contributions."
-                />
-              </div>
-
-              <div>
-                <HealthMetric
-                  label="Cash surplus / take-home"
-                  value={pct(
-                    calc.surplusRatio
-                  )}
-                  target="10%+"
-                  status={
-                    calc.surplusRatio >= 0.1
-                      ? "healthy"
-                      : calc.surplusRatio >= 0
-                      ? "watch"
-                      : "low"
-                  }
-                  note="Positive surplus means your current plan leaves money after expenses and post-tax investments."
-                />
-
-                <HealthMetric
-                  label="Debt / gross income"
-                  value={pct(
-                    calc.debtToIncome
-                  )}
-                  target="< 20%"
-                  status={getHealthStatus(
-                    calc.debtToIncome,
-                    {
-                      good: 0.2,
-                      watch: 0.36,
-                    },
-                    true
-                  )}
-                  note="Uses expenses categorized as Debt. A broader lender-style DTI calculation can be added later."
-                />
-
-                <HealthMetric
-                  label="Emergency fund"
-                  value={`${Math.min(
-                    calc.emergencyFunding * 100,
-                    999
-                  ).toFixed(0)}% funded`}
-                  target="6 months"
-                  status={
-                    calc.emergencyFunding >= 1
-                      ? "healthy"
-                      : calc.emergencyFunding >=
-                        0.5
-                      ? "watch"
-                      : "low"
-                  }
-                  note={`Target: ${fmt(
-                    calc.emergencyTarget
-                  )} based on six months of current expenses.`}
-                />
-              </div>
-            </div>
-          </Card>
-
-          {/* INCOME */}
+                    {/* INCOME */}
           {tab === "compare" && (
             <CompareView
               simulations={simulations}
@@ -2419,16 +2510,13 @@ export default function App() {
 
           {tab === "income" && (
             <div
-              className="two-col"
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "1fr 1fr",
+                display: "flex",
+                flexDirection: "column",
                 gap: 18,
               }}
             >
-              <div>
-                <Card title="Take-Home Pay">
+              <Card title="Take-Home Pay">
                   <div
                     style={{
                       display: "flex",
@@ -2688,112 +2776,7 @@ export default function App() {
                     </InfoBox>
                   </div>
                 </Card>
-              </div>
 
-              <Card title="Tax Breakdown">
-                <Row
-                  label="Gross salary"
-                  value={fmt(grossSalary)}
-                />
-
-                <Row
-                  label={`401k pre-tax (${k401Pct}%)`}
-                  value={`– ${fmt(
-                    calc.k401Annual
-                  )}`}
-                  sub
-                />
-
-                <Row
-                  label="Taxable income"
-                  value={fmt(
-                    calc.taxableIncome
-                  )}
-                />
-
-                <Row
-                  label="Federal income tax"
-                  value={`– ${fmt(
-                    calc.federalTax
-                  )}`}
-                  sub
-                />
-
-                <Row
-                  label="State income tax"
-                  value={`– ${fmt(
-                    calc.stateTax
-                  )}`}
-                  sub
-                />
-
-                <Row
-                  label="FICA"
-                  value={`– ${fmt(
-                    calc.fica
-                  )}`}
-                  sub
-                />
-
-                <Row
-                  label="Total taxes"
-                  value={`– ${fmt(
-                    calc.totalTax
-                  )}`}
-                />
-
-                <Row
-                  label="Estimated net annual"
-                  value={fmt(
-                    calc.calcNetMonthly *
-                      12
-                  )}
-                />
-
-                <Row
-                  label="Estimated net monthly"
-                  value={fmt(
-                    calc.calcNetMonthly
-                  )}
-                />
-
-                {incomeMode ===
-                  "prefill" && (
-                  <Row
-                    label="Actual take-home / mo"
-                    value={fmt(
-                      calc.netMonthly
-                    )}
-                    highlight
-                    valueColor="var(--green)"
-                  />
-                )}
-
-                <InfoBox>
-                  401k estimated tax
-                  savings:{" "}
-                  {fmt(
-                    calc.taxSavings
-                  )}
-                  /yr. Marginal federal
-                  rate:{" "}
-                  {pct(
-                    calc.marginalRate
-                  )}
-                  .
-                </InfoBox>
-
-                <InfoBox
-                  color="var(--green)"
-                  bg="rgba(74,222,128,0.08)"
-                >
-                  Employer match:{" "}
-                  {fmt(
-                    calc.employerMatchAmt
-                  )}
-                  /yr.
-                </InfoBox>
-              </Card>
             </div>
           )}
 
@@ -3700,10 +3683,16 @@ export default function App() {
                       key={m.target}
                       style={{
                         padding: 14,
-                        background:
-                          "var(--input-bg)",
-                        border:
-                          "1px solid var(--border)",
+                        background: m.reached
+                          ? "rgba(74,222,128,0.07)"
+                          : m.hit
+                          ? "var(--accent-dim)"
+                          : "var(--input-bg)",
+                        border: m.reached
+                          ? "1px solid var(--green)"
+                          : m.hit
+                          ? "1px solid var(--accent)"
+                          : "1px solid var(--border)",
                         borderRadius: 9,
                       }}
                     >
@@ -3770,31 +3759,14 @@ export default function App() {
               </Card>
 
               {/* YEAR BY YEAR */}
-              <Card
-                title={`Year-by-year breakdown — ${projYears} year projection`}
-                accent
-              >
-                <div
-                  style={{
-                    fontSize: 13,
-                    color:
-                      "var(--muted)",
-                    marginBottom: 10,
-                  }}
-                >
-                  Starting age:{" "}
-                  {age}. Final age:{" "}
-                  {finalAge}. Salary grows{" "}
-                  {salaryGrowth}% annually.
-                  Cash earns {cashRate}% APY.
-                </div>
-
-                <SnapshotTable
-                  snapshots={
-                    calc.proj.snapshots
-                  }
-                />
-              </Card>
+              <CollapsibleYearTable
+                snapshots={calc.proj.snapshots}
+                projYears={projYears}
+                age={age}
+                finalAge={finalAge}
+                salaryGrowth={salaryGrowth}
+                cashRate={cashRate}
+              />
 
               <div
                 className="two-col"

@@ -2,12 +2,12 @@
   "version": 1,
   "simulations": [
     {
-      "id": 1788938051337,
+      "id": 1789089569691,
       "name": "Simulation 1",
-      "tab": "income",
+      "tab": "compare",
       "incomeMode": "prefill",
-      "actualTakeHome": 15200,
-      "grossSalary": 185000,
+      "actualTakeHome": 8000,
+      "grossSalary": 85000,
       "stateRate": 5,
       "salaryGrowth": 3,
       "contributionGrowth": true,
@@ -22,7 +22,7 @@
           "id": 1,
           "name": "Rent / Mortgage",
           "category": "Housing",
-          "amount": 1500
+          "amount": 1230
         },
         {
           "id": 2,
@@ -60,11 +60,11 @@
       "projYears": 20
     },
     {
-      "id": 1788938101931,
+      "id": 1789091588031,
       "name": "Simulation 2",
       "tab": "income",
       "incomeMode": "prefill",
-      "actualTakeHome": 1200,
+      "actualTakeHome": 3000,
       "grossSalary": 85000,
       "stateRate": 5,
       "salaryGrowth": 3,
@@ -80,7 +80,65 @@
           "id": 1,
           "name": "Rent / Mortgage",
           "category": "Housing",
-          "amount": 1500
+          "amount": 1230
+        },
+        {
+          "id": 2,
+          "name": "Groceries",
+          "category": "Food",
+          "amount": 400
+        },
+        {
+          "id": 3,
+          "name": "Car + gas",
+          "category": "Transport",
+          "amount": 550
+        },
+        {
+          "id": 4,
+          "name": "Utilities",
+          "category": "Utilities",
+          "amount": 150
+        },
+        {
+          "id": 5,
+          "name": "Phone",
+          "category": "Subscriptions",
+          "amount": 80
+        }
+      ],
+      "rothContrib": 500,
+      "rothBalance": 0,
+      "rothRate": 7,
+      "brokerageContrib": 300,
+      "brokerageBalance": 0,
+      "brokerageRate": 7,
+      "initCash": 0,
+      "cashRate": 4,
+      "projYears": 20
+    },
+    {
+      "id": 1789091593169,
+      "name": "Simulation 3",
+      "tab": "income",
+      "incomeMode": "prefill",
+      "actualTakeHome": 3000,
+      "grossSalary": 85000,
+      "stateRate": 5,
+      "salaryGrowth": 3,
+      "contributionGrowth": true,
+      "age": 30,
+      "k401Pct": 6,
+      "employerMatch": 3,
+      "employerMatchMax": 3,
+      "k401Balance": 0,
+      "k401Rate": 7,
+      "expenses": [
+        {
+          "id": 1,
+          "name": "Rent / Mortgage",
+          "category": "Housing",
+          "amount": 1230
         },
         {
           "id": 2,
@@ -118,5 +176,5 @@
       "projYears": 20
     }
   ],
-  "activeSimulationId": 1788938051337
+  "activeSimulationId": 1789089569691
 }
