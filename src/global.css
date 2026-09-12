@@ -1,16 +1,49 @@
 /* ─── THEME VARIABLES ──────────────────────────────────────────────────── */
+
+/*
+  Palette: Warm Slate (dark) / Warm Stone (light)
+  ─────────────────────────────────────────────────
+  Accent  — muted teal-sage  (#5E9E8A)   calm, trustworthy, not electric
+  Green   — dusty sage       (#6BAF83)   positive without neon
+  Red     — terracotta rose  (#C0665A)   soft alarm, not panic
+  Yellow  — warm amber       (#C49A3C)   watch state, warm not garish
+
+  Dark surfaces are warm-tinted slate (not blue-black) so the eye
+  feels less fatigued during long planning sessions.
+  Light surfaces are warm off-white / stone — never pure white.
+*/
+
+/* ── LIGHT (default) ─────────────────────────────────────────────────
+   This is the unconditional `:root` palette so the page is light by
+   default even before JS runs (no flash of the wrong theme on load).
+   Dark mode is the explicit opt-in via `[data-theme="dark"]`. */
 :root {
-  --bg: #0f1117;
-  --card: #1a1d27;
-  --border: #2a2d3a;
-  --accent: #6c8ef5;
-  --accent-dim: rgba(108, 142, 245, 0.12);
-  --text: #e8eaf0;
-  --muted: #7b7f94;
-  --input-bg: #12151e;
-  --green: #4ade80;
-  --red: #f87171;
-  --yellow: #fbbf24;
+  --bg:          #F2EDE8;          /* warm stone canvas */
+  --card:        #FAF7F4;          /* warm off-white card */
+  --border:      #DDD7D0;          /* soft stone border */
+  --accent:      #3D7D6A;          /* deeper teal for contrast on light */
+  --accent-dim:  rgba(61,125,106,0.10);
+  --text:        #1C1814;          /* warm near-black */
+  --muted:       #7A7060;          /* warm stone */
+  --input-bg:    #EDE8E2;          /* sunken input field */
+  --green:       #3D7A52;          /* forest sage */
+  --red:         #A04840;          /* brick red */
+  --yellow:      #9A7020;          /* dark amber */
+}
+
+/* ── DARK ─────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:          #131109;          /* warm near-black, not blue */
+  --card:        #211E19;          /* lifted warm slate — more lift from bg */
+  --border:      #3D3730;          /* clearly visible warm divider */
+  --accent:      #5E9E8A;          /* muted teal-sage */
+  --accent-dim:  rgba(94,158,138,0.15);
+  --text:        #EBE5DD;          /* warm off-white — slightly brighter */
+  --muted:       #837970;          /* warm stone gray */
+  --input-bg:    #17140F;          /* sunken input, distinct from card */
+  --green:       #6BAF83;          /* dusty sage green */
+  --red:         #C0665A;          /* muted terracotta */
+  --yellow:      #C49A3C;          /* warm amber */
 }
 
 /* ─── RESET / BASE ─────────────────────────────────────────────────────── */

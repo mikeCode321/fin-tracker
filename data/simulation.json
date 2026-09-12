@@ -5,23 +5,22 @@
       "id": 1789098369314,
       "name": "Simulation 1",
       "tab": "income",
-      "actualTakeHome": 6000,
+      "actualTakeHome": 60000,
       "grossSalary": 120000,
-      "stateRate": 4,
-      "salaryGrowth": 5,
+      "salaryGrowth": 1.5,
       "contributionGrowth": true,
       "age": 29,
-      "k401Pct": 7,
+      "k401Pct": 1.5,
       "employerMatch": 50,
-      "employerMatchMax": 6,
+      "employerMatchMax": 60,
       "k401Balance": 0,
       "k401Rate": 7,
       "expenses": [
         {
           "id": 2,
           "name": "rent",
-          "category": "Food",
-          "amount": 1000
+          "category": "Housing",
+          "amount": 4908
         },
         {
           "id": 3,
@@ -33,7 +32,7 @@
           "id": 4,
           "name": "Utilities",
           "category": "Utilities",
-          "amount": 75
+          "amount": 7500
         },
         {
           "id": 1789148145778,
@@ -52,50 +51,104 @@
       "cashRate": 4
     },
     {
-      "id": 1789148074452,
+      "id": 1789179759857,
       "name": "Simulation 2",
-      "tab": "income",
-      "actualTakeHome": 5200,
-      "grossSalary": 85000,
-      "stateRate": 5,
-      "salaryGrowth": 3,
+      "tab": "outlook",
+      "actualTakeHome": 60000,
+      "grossSalary": 120000,
+      "salaryGrowth": 1.5,
       "contributionGrowth": true,
-      "age": 30,
-      "k401Pct": 6,
-      "employerMatch": 3,
-      "employerMatchMax": 3,
+      "age": 29,
+      "k401Pct": 1.5,
+      "employerMatch": 50,
+      "employerMatchMax": 60,
       "k401Balance": 0,
       "k401Rate": 7,
       "expenses": [
         {
           "id": 2,
-          "name": "Groceries",
-          "category": "Food",
-          "amount": 400
+          "name": "rent",
+          "category": "Housing",
+          "amount": 4908
         },
         {
           "id": 3,
           "name": "Car + gas",
           "category": "Transport",
-          "amount": 550
+          "amount": 350
         },
         {
           "id": 4,
           "name": "Utilities",
           "category": "Utilities",
-          "amount": 150
+          "amount": 7500
+        },
+        {
+          "id": 1789148145778,
+          "name": "misc",
+          "category": "Other",
+          "amount": 800
         }
       ],
-      "rothContrib": 500,
+      "rothContrib": 625,
       "rothBalance": 0,
       "rothRate": 7,
-      "brokerageContrib": 300,
+      "brokerageContrib": 1000,
       "brokerageBalance": 0,
       "brokerageRate": 7,
-      "initCash": 0,
+      "initCash": 100000,
+      "cashRate": 4
+    },
+    {
+      "id": 1789180363950,
+      "name": "Simulation 3",
+      "tab": "income",
+      "actualTakeHome": 60000,
+      "grossSalary": 120000,
+      "salaryGrowth": 1.5,
+      "contributionGrowth": true,
+      "age": 29,
+      "k401Pct": 1.5,
+      "employerMatch": 50,
+      "employerMatchMax": 60,
+      "k401Balance": 0,
+      "k401Rate": 7,
+      "expenses": [
+        {
+          "id": 2,
+          "name": "rent",
+          "category": "Housing",
+          "amount": 4908
+        },
+        {
+          "id": 3,
+          "name": "Car + gas",
+          "category": "Transport",
+          "amount": 350
+        },
+        {
+          "id": 4,
+          "name": "Utilities",
+          "category": "Utilities",
+          "amount": 7500
+        },
+        {
+          "id": 1789148145778,
+          "name": "misc",
+          "category": "Other",
+          "amount": 800
+        }
+      ],
+      "rothContrib": 625,
+      "rothBalance": 0,
+      "rothRate": 7,
+      "brokerageContrib": 1000,
+      "brokerageBalance": 0,
+      "brokerageRate": 7,
+      "initCash": 100000,
       "cashRate": 4
     }
   ],
-  "activeSimulationId": 1789098369314,
-  "projYears": 30
+  "activeSimulationId": 1789179759857,
+  "projYears": 40
 }

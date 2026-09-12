@@ -1,47 +1,417 @@
-/* ─── APP SHELL ────────────────────────────────────────────────────────── */
+/* ─── APP SHELL — sidebar + scrolling content ──────────────────────────── */
 .ft-shell {
+  display: flex;
   min-height: 100vh;
   background: var(--bg);
-  padding-bottom: 60px;
 }
 
-.ft-main {
-  max-width: 1020px;
-  margin: 0 auto;
-  padding: 24px 16px;
-}
-
-/* ─── HEADER ───────────────────────────────────────────────────────────── */
-.ft-header {
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
+/* ─── LEFT SIDEBAR ─────────────────────────────────────────────────────── */
+.ft-sidebar {
+  width: 210px;
+  flex-shrink: 0;
   position: sticky;
   top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
   z-index: 10;
 }
 
-.ft-header-row {
-  max-width: 1020px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
+/* ─── MOBILE TOP HEADER ────────────────────────────────────────────────── */
+.ft-mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 52px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
   align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.ft-mobile-header-brand {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+/* ─── MOBILE HAMBURGER BUTTON ─────────────────────────────────────────── */
+.ft-hamburger {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 8px;
+  flex-shrink: 0;
+}
+
+.ft-hamburger-line {
+  width: 18px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+
+/* ─── MOBILE SIDEBAR BACKDROP ──────────────────────────────────────────── */
+.ft-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+}
+
+/* ─── MOBILE SIDEBAR DRAWER ───────────────────────────────────────────── */
+.ft-sidebar-drawer {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100vh;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  z-index: 100;
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow-y: auto;
+}
+
+.ft-sidebar-drawer.is-open {
+  transform: translateX(0);
+}
+
+.ft-sidebar-close {
+  display: none;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.ft-sidebar-close:hover {
+  color: var(--text);
+}
+
+/* ─── MOBILE RESPONSIVE ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .ft-sidebar {
+    display: none;
+  }
+
+  .ft-mobile-header {
+    display: flex;
+  }
+
+  /* The hamburger lives inside the header on mobile, not standalone */
+  .ft-hamburger {
+    display: flex;
+  }
+
+  .ft-sidebar-backdrop {
+    display: block;
+  }
+
+  .ft-sidebar-drawer {
+    display: block;
+  }
+
+  .ft-sidebar-close {
+    display: block;
+  }
+
+  .ft-main {
+    padding: 16px;
+    padding-top: 68px; /* clears the 52px header */
+    overflow-x: hidden;
+  }
+
+  /* Ensure health panel appears above sidebar drawer on mobile */
+  .health-fab {
+    z-index: 150;
+  }
+
+  .health-drawer {
+    z-index: 150;
+  }
+
+  .health-backdrop {
+    z-index: 149;
+  }
+}
+
+/* ─── SUB-1100 OVERFLOW FIXES ─────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .ft-shell {
+    overflow-x: hidden;
+  }
+
+  .ft-main {
+    overflow-x: hidden;
+  }
+
+  /* Clamp the five-col outlook stat grid before it overflows */
+  .five-col {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Shrink the invest 3-col grid to 2 */
+  .invest-account-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Make sure the income 2-col doesn't overflow */
+  .income-grid {
+    gap: 12px;
+  }
+
+  /* Comparison chart: allow horizontal scroll, not overflow */
+  .chart-wrap {
+    overflow-x: auto;
+  }
+
+  /* Keep suggestion pills from breaking layout */
+  .suggestions-strip {
+    flex-wrap: wrap;
+  }
+
+  .suggestion-pill {
+    white-space: normal;
+  }
+}
+
+.ft-sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px 14px 16px;
 }
 
 .ft-brand {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
   letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 22px;
+  color: var(--text);
 }
 
-.ft-header-right {
+/* ─── SIDEBAR NAV ──────────────────────────────────────────────────────── */
+.ft-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 20px;
+}
+
+.ft-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  transition: all 0.12s;
+  width: 100%;
+}
+
+.ft-nav-item:hover {
+  background: var(--accent-dim);
+  color: var(--text);
+}
+
+.ft-nav-item.is-active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.ft-nav-icon {
+  font-size: 14px;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ─── SIDEBAR DIVIDER ──────────────────────────────────────────────────── */
+.ft-sidebar-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0 14px;
+}
+
+/* ─── SIDEBAR SECTION ──────────────────────────────────────────────────── */
+.ft-sidebar-section {
+  margin-bottom: 20px;
+}
+
+.ft-sidebar-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+/* ─── SIMULATION ITEMS ─────────────────────────────────────────────────── */
+.ft-sim-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--input-bg);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  text-align: left;
+  gap: 6px;
+}
+
+.ft-sim-item.is-active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.ft-sim-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-sim-tab-delete {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.ft-sim-tab-delete:hover {
+  opacity: 1;
+  color: var(--red);
+}
+
+.ft-sim-add {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px dashed var(--border);
+  cursor: pointer;
+  background: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.ft-sim-add:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ft-sim-limit-note {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ─── SIDEBAR PROJECTION ───────────────────────────────────────────────── */
+.ft-sidebar-proj {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ft-sidebar-proj-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.ft-projection-slider-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ft-projection-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.ft-sidebar-proj input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.ft-sidebar-age-range {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ─── SIDEBAR BOTTOM ───────────────────────────────────────────────────── */
+.ft-sidebar-spacer {
+  flex: 1;
+}
+
+.ft-sidebar-bottom {
   display: flex;
   align-items: center;
   gap: 10px;
-  max-width: 100%;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.ft-theme-toggle {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .ft-save-status {
@@ -51,151 +421,16 @@
   color: var(--status-color, var(--muted));
 }
 
-/* ─── SIMULATION TABS ──────────────────────────────────────────────────── */
-.ft-sim-tabs {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 100%;
-  overflow-x: auto;
-  padding: 2px;
-}
-
-.ft-sim-tab {
-  padding: 7px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  cursor: pointer;
-  background: var(--input-bg);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.ft-sim-tab.is-active {
-  background: var(--accent-dim);
-  color: var(--accent);
-}
-
-.ft-sim-tab-delete {
-  margin-left: 8px;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1;
-}
-
-.ft-sim-add {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 auto;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  cursor: pointer;
-  background: var(--input-bg);
-  color: var(--accent);
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1;
-}
-
-.ft-sim-add:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.ft-sim-limit-note {
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-/* ─── MAIN TAB BAR ─────────────────────────────────────────────────────── */
-.ft-tab-bar {
-  display: flex;
-  gap: 6px;
-  background: var(--input-bg);
-  padding: 4px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-
-.ft-tab {
-  padding: 8px 18px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  background: transparent;
-  color: var(--muted);
-  transition: all 0.15s;
-}
-
-.ft-tab.is-active {
-  background: var(--accent);
-  color: #fff;
-}
-
-/* ─── PROJECTION SETTINGS BAR ──────────────────────────────────────────── */
-.ft-projection-bar {
-  border-top: 1px solid var(--border);
-  margin-top: 12px;
-  padding-top: 10px;
-  max-width: 1020px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.ft-projection-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.ft-projection-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-}
-
-.ft-projection-slider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/* ─── MAIN CONTENT ─────────────────────────────────────────────────────── */
+.ft-main {
   flex: 1;
-  min-width: 200px;
-  max-width: 340px;
+  min-width: 0;
+  padding: 24px;
+  padding-bottom: 60px;
 }
 
-.ft-projection-slider-label {
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.ft-projection-slider input[type="range"] {
-  flex: 1;
-  accent-color: var(--accent);
-}
-
-.ft-projection-value {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--accent);
-  white-space: nowrap;
-  min-width: 52px;
-}
-
-.ft-age-range {
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
-}
+/* ─── LEGACY (kept for compatibility) ──────────────────────────────────── */
+.ft-tab-bar { display: none; } /* replaced by sidebar nav */
 
 /* ─── CARD ─────────────────────────────────────────────────────────────── */
 .card {
@@ -428,22 +663,22 @@
 
 .info-box.is-muted {
   color: var(--muted);
-  background: rgba(123, 127, 148, 0.08);
+  background: rgba(122, 114, 104, 0.09);
 }
 
 .info-box.is-green {
   color: var(--green);
-  background: rgba(74, 222, 128, 0.08);
+  background: rgba(107, 175, 131, 0.10);
 }
 
 .info-box.is-red {
   color: var(--red);
-  background: rgba(248, 113, 113, 0.1);
+  background: rgba(192, 102, 90, 0.10);
 }
 
 .info-box.is-yellow {
   color: var(--yellow);
-  background: rgba(251, 191, 36, 0.08);
+  background: rgba(196, 154, 60, 0.10);
 }
 
 /* ─── HEALTH METRIC ────────────────────────────────────────────────────── */
@@ -461,6 +696,7 @@
 
 .health-metric-info {
   min-width: 0;
+  text-align: left;
 }
 
 .health-metric-label {
@@ -470,12 +706,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
 }
 
 .health-metric-target {
   font-size: 9px;
   color: var(--muted);
   margin-top: 1px;
+  text-align: left;
 }
 
 .health-metric-stat {
@@ -552,7 +790,7 @@
 
 .health-panel {
   position: fixed;
-  top: 70px;
+  top: 16px;
   right: -320px;
   width: 300px;
   z-index: 200;
@@ -562,7 +800,7 @@
   border-radius: 12px 0 0 12px;
   box-shadow: -4px 0 32px rgba(0, 0, 0, 0.4);
   transition: right 0.25s cubic-bezier(0.32, 0.72, 0, 1);
-  max-height: calc(100vh - 90px);
+  max-height: calc(100vh - 32px);
   overflow-y: auto;
 }
 
@@ -708,12 +946,197 @@
   padding: 14px 16px;
 }
 
-.stat-card.is-accent {
-  border-color: var(--accent);
-}
-
 .stat-card.is-lg {
   padding: 16px;
+}
+
+/* Stat cards are intentionally neutral — no left-border color cues.
+   Color lives only in the value text (.u-text-*), not the card chrome. */
+
+/* ─── MOBILE STAT CARDS ────────────────────────────────────────────────── */
+.stat-card-compact {
+  padding: 10px 12px;
+}
+
+.stat-row-mobile {
+  display: none;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stat-row-mobile .stat-card {
+  padding: 8px 10px;
+}
+
+.stat-expand-toggle {
+  width: 100%;
+  padding: 6px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.stat-expand-toggle:hover {
+  background: var(--accent-dim);
+}
+
+.stat-grid-mobile {
+  display: none;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .five-col {
+    display: none;
+  }
+
+  .stat-row-mobile,
+  .stat-grid-mobile {
+    display: grid;
+  }
+}
+
+/* ─── SUGGESTIONS STRIP ────────────────────────────────────────────────── */
+.suggestions-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: rgba(196, 154, 60, 0.07);
+  border: 1px solid rgba(196, 154, 60, 0.22);
+  border-radius: 9px;
+  padding: 10px 14px;
+  margin-top: 0;
+  margin-bottom: 18px;
+  font-size: 12px;
+}
+
+.suggestions-strip.is-all-good {
+  background: rgba(107, 175, 131, 0.07);
+  border-color: rgba(107, 175, 131, 0.22);
+  color: var(--green);
+}
+
+.suggestions-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--yellow);
+  white-space: nowrap;
+  padding-top: 1px;
+}
+
+.suggestions-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.suggestion-pill {
+  background: rgba(196, 154, 60, 0.12);
+  border: 1px solid rgba(196, 154, 60, 0.25);
+  color: var(--yellow);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ─── OUTLOOK COMBINED STATS CARD (mobile) ─────────────────────────────── */
+.outlook-stats-combined {
+  display: none;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.outlook-stats-combined-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 8px;
+}
+
+.outlook-stat-mini {
+  min-width: 0;
+}
+
+.outlook-stat-mini-label {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.outlook-stat-mini-value {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.outlook-stat-mini-sub {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+@media (max-width: 768px) {
+  /* Hide the desktop five-col outlook stat grid, show combined card instead */
+  .outlook-five-col {
+    display: none !important;
+  }
+
+  .outlook-stats-combined {
+    display: block;
+  }
+}
+
+/* ─── INCOME TAB 2-COL GRID ────────────────────────────────────────────── */
+.income-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.income-401k-math {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  margin: -6px 0 8px;
+}
+
+.income-401k-limit {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.income-match-preview {
+  font-size: 12px;
+  color: var(--green);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+@media (max-width: 720px) {
+  .income-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stat-label {
@@ -863,6 +1286,10 @@
   border-bottom: 1px solid var(--border);
 }
 
+.benchmark-col {
+  min-width: 0;
+}
+
 .benchmark-col-label {
   font-size: 10px;
   font-weight: 700;
@@ -927,7 +1354,7 @@
 }
 
 .milestone-row-item.is-reached {
-  background: rgba(74, 222, 128, 0.07);
+  background: rgba(107, 175, 131, 0.09);
   border-color: var(--green);
 }
 
@@ -957,7 +1384,7 @@
 }
 
 .milestone-card.is-reached {
-  background: rgba(74, 222, 128, 0.07);
+  background: rgba(107, 175, 131, 0.09);
   border-color: var(--green);
 }
 
@@ -1127,25 +1554,25 @@
 }
 
 .metric-total {
-  color: var(--accent);
+  color: var(--accent);        /* teal-sage */
 }
 .metric-roth {
-  color: var(--green);
+  color: var(--green);         /* dusty sage */
 }
 .metric-k401 {
-  color: var(--yellow);
+  color: var(--yellow);        /* warm amber */
 }
 .metric-brokerage {
-  color: #c084fc;
+  color: #A08C6E;              /* warm tan */
 }
 .metric-cash {
-  color: #fb7185;
+  color: #B07B60;              /* warm sienna */
 }
 .metric-gross {
-  color: #38bdf8;
+  color: #7E9CAA;              /* muted steel blue */
 }
 .metric-takeHome {
-  color: #a3e635;
+  color: #8EA87E;              /* soft moss */
 }
 
 /* ─── COMPARISON CHART ─────────────────────────────────────────────────── */
