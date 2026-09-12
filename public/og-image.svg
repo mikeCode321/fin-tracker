@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#863bff"/>
+  <!-- Simple shark shape -->
+  <path d="M300 350 Q400 262 500 250 Q600 237 700 262 Q775 287 800 350 Q825 412 800 437 Q600 462 500 437 Q400 412 300 350 Z" fill="white" stroke="white" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Shark fin -->
+  <path d="M500 250 L575 112 L650 250" fill="white" stroke="white" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Shark eye -->
+  <circle cx="700" cy="325" r="12" fill="#863bff"/>
+  <!-- Squiggle wave -->
+  <path d="M150 525 Q275 475 400 525 Q525 575 650 525 Q775 475 900 525 Q1025 575 1050 525" stroke="white" stroke-width="8" fill="none" opacity="0.8"/>
+  <!-- Text -->
+  <text x="600" y="520" text-anchor="middle" font-family="Arial, sans-serif" font-size="64" font-weight="bold" fill="white">FirePhin</text>
+  <text x="600" y="580" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="white" opacity="0.9">Financial Planning & Wealth Tracker</text>
+</svg>

@@ -1361,25 +1361,30 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadSimulationFile() {
+    function loadSimulationFile() {
       try {
-        const response = await fetch("http://localhost:3001/api/simulation");
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const parsed = await response.json();
+        const stored = localStorage.getItem("fp-simulations");
         if (cancelled) return;
 
-        if (Array.isArray(parsed.simulations) && parsed.simulations.length) {
-          const active =
-            parsed.simulations.find(
-              (s) => s.id === parsed.activeSimulationId,
-            ) || parsed.simulations[0];
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed.simulations) && parsed.simulations.length) {
+            const active =
+              parsed.simulations.find(
+                (s) => s.id === parsed.activeSimulationId,
+              ) || parsed.simulations[0];
 
-          setSimulations(parsed.simulations.slice(0, MAX_SIMULATIONS));
-          setActiveSimulationId(active.id);
-          applySimulation(active);
-          if (typeof parsed.projYears === "number") {
-            setProjYears(parsed.projYears);
+            setSimulations(parsed.simulations.slice(0, MAX_SIMULATIONS));
+            setActiveSimulationId(active.id);
+            applySimulation(active);
+            if (typeof parsed.projYears === "number") {
+              setProjYears(parsed.projYears);
+            }
+          } else {
+            const initial = freshSimulation(Date.now(), "Simulation 1");
+            setActiveSimulationId(initial.id);
+            setSimulationName(initial.name);
+            setSimulations([initial]);
           }
         } else {
           const initial = freshSimulation(Date.now(), "Simulation 1");
@@ -1391,7 +1396,7 @@ export default function App() {
         hydratedRef.current = true;
         setSaveStatus("saved");
       } catch (error) {
-        console.error("Could not load simulation.json:", error);
+        console.error("Could not load from localStorage:", error);
         if (!cancelled) {
           const initial = freshSimulation(Date.now(), "Simulation 1");
           setActiveSimulationId(initial.id);
@@ -1454,9 +1459,9 @@ export default function App() {
     projYears,
   ]);
 
-  // Save to data/simulation.json every 30 seconds.
+  // Save to localStorage every 10 seconds.
   useEffect(() => {
-    const saveToDisk = async () => {
+    const saveToDisk = () => {
       if (!hydratedRef.current || saveInFlightRef.current) return;
 
       const payload = stateRef.current;
@@ -1466,21 +1471,18 @@ export default function App() {
       setSaveStatus("saving");
 
       try {
-        const response = await fetch("http://localhost:3001/api/simulation", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        localStorage.setItem(
+          "fp-simulations",
+          JSON.stringify({
             version: 1,
             simulations: payload.simulations,
             activeSimulationId: payload.activeSimulationId,
             projYears: payload.projYears,
-          }),
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          })
+        );
         setSaveStatus("saved");
       } catch (error) {
-        console.error("Could not save simulation.json:", error);
+        console.error("Could not save to localStorage:", error);
         setSaveStatus("error");
       } finally {
         saveInFlightRef.current = false;

@@ -4,7 +4,7 @@
     {
       "id": 1789098369314,
       "name": "Simulation 1",
-      "tab": "invest",
+      "tab": "compare",
       "actualTakeHome": 6000,
       "grossSalary": 120000,
       "salaryGrowth": 1.5,

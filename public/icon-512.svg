@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" fill="#863bff" rx="64"/>
+  <!-- Simple shark shape -->
+  <path d="M85 298 Q128 213 213 192 Q298 170 384 213 Q426 235 448 298 Q469 360 448 384 Q341 405 256 384 Q170 362 85 298 Z" fill="white" stroke="white" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Shark fin -->
+  <path d="M256 192 L298 85 L341 192" fill="white" stroke="white" stroke-width="8" stroke-linejoin="round"/>
+  <!-- Shark eye -->
+  <circle cx="384" cy="277" r="16" fill="#863bff"/>
+  <!-- Squiggle wave -->
+  <path d="M42 448 Q85 405 128 448 Q170 490 213 448 Q256 405 298 448 Q341 490 384 448 Q426 405 469 448" stroke="white" stroke-width="12" fill="none" opacity="0.8"/>
+</svg>

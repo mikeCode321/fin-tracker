@@ -3,8 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>fin-tracker</title>
+    <meta name="theme-color" content="#863bff" />
+    
+    <!-- SEO Meta Tags -->
+    <title>FirePhin - Financial Planning & Wealth Tracker</title>
+    <meta name="description" content="Track your financial future with FirePhin. Plan investments, compare scenarios, and visualize your path to financial independence with our comprehensive wealth tracking tools." />
+    <meta name="keywords" content="financial planning, wealth tracker, investment calculator, FIRE, retirement planning, 401k, Roth IRA, net worth, financial independence" />
+    <meta name="author" content="FirePhin" />
+    <link rel="canonical" href="https://firephin.com/" />
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="FirePhin - Financial Planning & Wealth Tracker" />
+    <meta property="og:description" content="Track your financial future with FirePhin. Plan investments, compare scenarios, and visualize your path to financial independence." />
+    <meta property="og:image" content="https://firephin.com/og-image.svg" />
+    <meta property="og:url" content="https://firephin.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="FirePhin" />
+    
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FirePhin - Financial Planning & Wealth Tracker" />
+    <meta name="twitter:description" content="Track your financial future with FirePhin. Plan investments, compare scenarios, and visualize your path to financial independence." />
+    <meta name="twitter:image" content="https://firephin.com/twitter-image.svg" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "FirePhin",
+      "url": "https://firephin.com/",
+      "description": "Financial planning and wealth tracking application for planning investments and visualizing path to financial independence",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://firephin.com/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

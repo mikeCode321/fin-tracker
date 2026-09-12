@@ -1,0 +1,24 @@
+{
+  "name": "FirePhin",
+  "short_name": "FirePhin",
+  "description": "Financial planning and wealth tracker for planning investments and visualizing your path to financial independence",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#863bff",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "orientation": "portrait"
+}
