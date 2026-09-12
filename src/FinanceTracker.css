@@ -1,0 +1,1183 @@
+/* ─── APP SHELL ────────────────────────────────────────────────────────── */
+.ft-shell {
+  min-height: 100vh;
+  background: var(--bg);
+  padding-bottom: 60px;
+}
+
+.ft-main {
+  max-width: 1020px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+/* ─── HEADER ───────────────────────────────────────────────────────────── */
+.ft-header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.ft-header-row {
+  max-width: 1020px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ft-brand {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.ft-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+}
+
+.ft-save-status {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--status-color, var(--muted));
+}
+
+/* ─── SIMULATION TABS ──────────────────────────────────────────────────── */
+.ft-sim-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 2px;
+}
+
+.ft-sim-tab {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--input-bg);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ft-sim-tab.is-active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.ft-sim-tab-delete {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.ft-sim-add {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--input-bg);
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.ft-sim-add:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ft-sim-limit-note {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ─── MAIN TAB BAR ─────────────────────────────────────────────────────── */
+.ft-tab-bar {
+  display: flex;
+  gap: 6px;
+  background: var(--input-bg);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.ft-tab {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+
+.ft-tab.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ─── PROJECTION SETTINGS BAR ──────────────────────────────────────────── */
+.ft-projection-bar {
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding-top: 10px;
+  max-width: 1020px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ft-projection-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ft-projection-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.ft-projection-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 200px;
+  max-width: 340px;
+}
+
+.ft-projection-slider-label {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ft-projection-slider input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.ft-projection-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  min-width: 52px;
+}
+
+.ft-age-range {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ─── CARD ─────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 20px 22px;
+  margin-bottom: 18px;
+}
+
+.card.is-accent {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-dim);
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  gap: 10px;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.card-badge {
+  font-size: 11px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 99px;
+  padding: 2px 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ─── FIELD LABEL ──────────────────────────────────────────────────────── */
+.field-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+/* ─── DATA ROW ─────────────────────────────────────────────────────────── */
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.data-row-label {
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+}
+
+.data-row-label.is-sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.data-row-value {
+  font-weight: 500;
+  color: var(--status-color, var(--text));
+  font-size: 14px;
+  text-align: right;
+}
+
+.data-row-value.is-highlight {
+  font-weight: 700;
+  color: var(--status-color, var(--accent));
+}
+
+/* ─── SLIDER FIELD ─────────────────────────────────────────────────────── */
+.slider-field {
+  margin-bottom: 14px;
+}
+
+.slider-field-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.slider-field-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.slider-field input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.slider-field-range {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+/* ─── NUMBER FIELD ─────────────────────────────────────────────────────── */
+.num-field {
+  margin-bottom: 12px;
+}
+
+.num-field-box {
+  display: flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.num-field-affix {
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.num-field-affix.is-prefix {
+  border-right: 1px solid var(--border);
+}
+
+.num-field-affix.is-suffix {
+  font-size: 13px;
+}
+
+.num-field-input {
+  flex: 1;
+  padding: 9px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  min-width: 0;
+}
+
+/* ─── TOGGLE BUTTON ────────────────────────────────────────────────────── */
+.toggle-btn {
+  padding: 6px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--input-bg);
+  color: var(--muted);
+}
+
+.toggle-btn.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ─── CHIP BUTTON (compare view selectors) ─────────────────────────────── */
+.chip-btn {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.chip-btn.is-active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.chip-btn.is-active-alt {
+  background: var(--accent-dim);
+  color: var(--text);
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ─── PROGRESS ─────────────────────────────────────────────────────────── */
+.progress-track {
+  background: var(--border);
+  border-radius: 99px;
+  height: 6px;
+  margin-top: 4px;
+}
+
+.progress-fill {
+  border-radius: 99px;
+  height: 6px;
+  transition: width 0.3s;
+  background: var(--status-color, var(--accent));
+}
+
+/* ─── INFO BOX ─────────────────────────────────────────────────────────── */
+.info-box {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin-top: 8px;
+  line-height: 1.5;
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.info-box.is-muted {
+  color: var(--muted);
+  background: rgba(123, 127, 148, 0.08);
+}
+
+.info-box.is-green {
+  color: var(--green);
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.info-box.is-red {
+  color: var(--red);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.info-box.is-yellow {
+  color: var(--yellow);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+/* ─── HEALTH METRIC ────────────────────────────────────────────────────── */
+.health-metric {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.health-metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.health-metric-info {
+  min-width: 0;
+}
+
+.health-metric-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.health-metric-target {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.health-metric-stat {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.health-metric-value {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--status-color, var(--text));
+}
+
+.health-metric-status {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--status-color, var(--text));
+}
+
+/* ─── FLOATING HEALTH PANEL ────────────────────────────────────────────── */
+.health-fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 200;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--card);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  line-height: 1.1;
+  border: 2px solid var(--status-color, var(--border));
+  color: var(--status-color, var(--muted));
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--status-color, var(--muted)) 13%, transparent),
+    0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.health-fab-heart {
+  font-size: 15px;
+}
+
+.health-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.health-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--card);
+  border-radius: 16px 16px 0 0;
+  transform: translateY(105%);
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 80vh;
+  overflow-y: auto;
+  border-top: 2px solid var(--status-color, var(--border));
+}
+
+.health-drawer.is-open {
+  transform: translateY(0);
+}
+
+.health-panel {
+  position: fixed;
+  top: 70px;
+  right: -320px;
+  width: 300px;
+  z-index: 200;
+  background: var(--card);
+  border: 1px solid var(--status-color, var(--border));
+  border-right: none;
+  border-radius: 12px 0 0 12px;
+  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.4);
+  transition: right 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+}
+
+.health-panel.is-open {
+  right: 0;
+}
+
+.health-panel-head,
+.health-drawer-head {
+  padding: 12px 16px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.health-panel-head {
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  z-index: 1;
+  border-bottom: 1px solid var(--border);
+}
+
+.health-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.health-drawer-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.health-score-pill {
+  font-size: 11px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 99px;
+  padding: 1px 8px;
+  margin-left: 6px;
+}
+
+.health-close-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.health-drawer .health-close-btn {
+  font-size: 22px;
+  padding: 0 4px;
+}
+
+.health-toggle-tab {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  z-index: 200;
+  transform: translateY(-50%);
+  background: var(--card);
+  border: 1px solid var(--status-color, var(--border));
+  border-right: none;
+  border-radius: 10px 0 0 10px;
+  padding: 12px 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  box-shadow: -2px 0 16px rgba(0, 0, 0, 0.3);
+}
+
+.health-toggle-score {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--status-color, var(--text));
+}
+
+.health-toggle-label {
+  font-size: 9px;
+  color: var(--muted);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.health-toggle-caret {
+  font-size: 10px;
+  color: var(--status-color, var(--text));
+}
+
+.health-panel-body {
+  padding: 0 16px 16px;
+}
+
+.health-score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.health-score-label {
+  font-size: 9px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.health-score-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--status-color, var(--text));
+  line-height: 1.1;
+  margin-top: 2px;
+}
+
+.health-score-suffix {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.health-score-tag {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--status-color, var(--text));
+}
+
+/* ─── SUMMARY / STAT GRID ──────────────────────────────────────────────── */
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.stat-card.is-accent {
+  border-color: var(--accent);
+}
+
+.stat-card.is-lg {
+  padding: 16px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--status-color, var(--text));
+}
+
+.stat-value.is-lg {
+  font-size: 20px;
+}
+
+.stat-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ─── EXPENSES ─────────────────────────────────────────────────────────── */
+.expense-header {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: 1fr 130px 110px 32px;
+  gap: 8px;
+}
+
+.expense-row {
+  display: grid;
+  grid-template-columns: 1fr 130px 110px 32px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.expense-input,
+.expense-select {
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 13px;
+  min-width: 0;
+}
+
+.expense-amount {
+  display: flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+.expense-amount-prefix {
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.expense-amount-input {
+  width: 100%;
+  padding: 7px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+
+.expense-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.expense-add-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 13px;
+  width: 100%;
+}
+
+.expense-category-item {
+  margin-bottom: 10px;
+}
+
+.expense-category-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.expense-category-amount {
+  font-weight: 600;
+  color: var(--status-color, var(--text));
+}
+
+.expense-category-pct {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* ─── INVEST TAB — 3-COL ACCOUNT GRID ─────────────────────────────────── */
+.invest-account-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 0;
+}
+
+.invest-account-grid .card {
+  margin-bottom: 18px;
+}
+
+@media (max-width: 800px) {
+  .invest-account-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ─── OUTLOOK — COMPACT BENCHMARK TABLE ────────────────────────────────── */
+.benchmark-header-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.benchmark-col-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.benchmark-col-value {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 3px;
+}
+
+.benchmark-pct-table {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.benchmark-pct-head {
+  display: grid;
+  grid-template-columns: 52px 1fr 1fr;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+
+.benchmark-pct-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 1fr;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── OUTLOOK — COMPACT MILESTONE ROWS ─────────────────────────────────── */
+.milestone-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.milestone-row-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  gap: 8px;
+}
+
+.milestone-row-item.is-reached {
+  background: rgba(74, 222, 128, 0.07);
+  border-color: var(--green);
+}
+
+.milestone-row-value {
+  font-size: 16px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.milestone-row-status {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: right;
+}
+
+.milestone-row-status.is-reached {
+  color: var(--green);
+}
+
+/* ─── MILESTONES ───────────────────────────────────────────────────────── */
+.milestone-card {
+  padding: 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.milestone-card.is-reached {
+  background: rgba(74, 222, 128, 0.07);
+  border-color: var(--green);
+}
+
+.milestone-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.milestone-value {
+  font-size: 19px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.milestone-status {
+  margin-top: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.milestone-status.is-reached {
+  color: var(--green);
+}
+
+.milestone-age {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* ─── YEAR-BY-YEAR TABLE ───────────────────────────────────────────────── */
+.year-table-shell {
+  background: var(--card);
+  border-radius: 12px;
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-dim);
+  overflow: hidden;
+}
+
+.year-table-toggle {
+  width: 100%;
+  padding: 16px 22px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.year-table-toggle-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.year-table-caret {
+  font-size: 18px;
+  color: var(--accent);
+  line-height: 1;
+  transition: transform 0.2s;
+}
+
+.year-table-caret.is-open {
+  transform: rotate(180deg);
+}
+
+.year-table-body {
+  padding: 0 22px 18px;
+}
+
+.year-table-meta {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+/* ─── TABLES (snapshot + comparison) ───────────────────────────────────── */
+.table-wrap {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.data-table th {
+  text-align: right;
+  padding: 4px 8px;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table td {
+  padding: 6px 8px;
+  text-align: right;
+}
+
+.data-table th.is-left,
+.data-table td.is-left {
+  text-align: left;
+}
+
+.data-table tr.has-top-border td {
+  border-top: 1px solid var(--border);
+}
+
+.cell-muted {
+  color: var(--muted);
+}
+
+.cell-accent {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.cell-strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.cell-status {
+  color: var(--status-color, var(--text));
+  font-weight: 600;
+}
+
+/* ─── COMPARE VIEW ─────────────────────────────────────────────────────── */
+.compare-table-wrap {
+  overflow-x: auto;
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 700px;
+}
+
+.compare-table th,
+.compare-table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.compare-table th.is-year,
+.compare-table td.is-year {
+  text-align: left;
+  color: var(--muted);
+}
+
+.compare-table th.is-metric {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.compare-table td.is-metric {
+  text-align: right;
+  font-weight: 650;
+}
+
+.metric-total {
+  color: var(--accent);
+}
+.metric-roth {
+  color: var(--green);
+}
+.metric-k401 {
+  color: var(--yellow);
+}
+.metric-brokerage {
+  color: #c084fc;
+}
+.metric-cash {
+  color: #fb7185;
+}
+.metric-gross {
+  color: #38bdf8;
+}
+.metric-takeHome {
+  color: #a3e635;
+}
+
+/* ─── COMPARISON CHART ─────────────────────────────────────────────────── */
+.chart-wrap {
+  overflow-x: auto;
+}
+
+.chart-svg {
+  width: 100%;
+  min-width: 680px;
+  height: auto;
+  display: block;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 8px 4px 0;
+  font-size: 12px;
+}
+
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+
+.chart-legend-swatch {
+  width: 20px;
+  height: 3px;
+  display: inline-block;
+  border-radius: 2px;
+}

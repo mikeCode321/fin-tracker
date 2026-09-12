@@ -1,0 +1,158 @@
+/* ─── THEME VARIABLES ──────────────────────────────────────────────────── */
+:root {
+  --bg: #0f1117;
+  --card: #1a1d27;
+  --border: #2a2d3a;
+  --accent: #6c8ef5;
+  --accent-dim: rgba(108, 142, 245, 0.12);
+  --text: #e8eaf0;
+  --muted: #7b7f94;
+  --input-bg: #12151e;
+  --green: #4ade80;
+  --red: #f87171;
+  --yellow: #fbbf24;
+}
+
+/* ─── RESET / BASE ─────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+input[type="range"] {
+  height: 4px;
+}
+
+input,
+select,
+button {
+  font-family: inherit;
+}
+
+table td,
+table th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── STATUS UTILITIES ─────────────────────────────────────────────────────
+   Components can add one of these modifier classes to expose a single
+   `--status-color` custom property, which local component styles then
+   consume (e.g. `color: var(--status-color, var(--text))`). This lets
+   data-driven color (healthy/watch/low, positive/negative, etc.) be applied
+   without inline styles. */
+.status-healthy {
+  --status-color: var(--green);
+}
+.status-watch {
+  --status-color: var(--yellow);
+}
+.status-low {
+  --status-color: var(--red);
+}
+.status-positive {
+  --status-color: var(--green);
+}
+.status-negative {
+  --status-color: var(--red);
+}
+
+/* ─── TEXT / BORDER COLOR UTILITIES ─────────────────────────────────────── */
+.u-text-accent {
+  color: var(--accent);
+}
+.u-text-green {
+  color: var(--green);
+}
+.u-text-red {
+  color: var(--red);
+}
+.u-text-yellow {
+  color: var(--yellow);
+}
+.u-text-muted {
+  color: var(--muted);
+}
+.u-text-default {
+  color: var(--text);
+}
+
+/* ─── LAYOUT UTILITIES ───────────────────────────────────────────────────── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.five-col {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.gap-8 {
+  gap: 8px;
+}
+
+.gap-10 {
+  gap: 10px;
+}
+
+.gap-12 {
+  gap: 12px;
+}
+
+.gap-16 {
+  gap: 16px;
+}
+
+.gap-24 {
+  gap: 24px;
+}
+
+.mb-18 {
+  margin-bottom: 18px;
+}
+
+.mb-24 {
+  margin-bottom: 24px;
+}
+
+@media (max-width: 800px) {
+  .two-col {
+    grid-template-columns: 1fr !important;
+  }
+
+  .five-col,
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .expense-row,
+  .expense-header {
+    grid-template-columns: 1fr 100px 90px 28px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .five-col,
+  .grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .expense-row,
+  .expense-header {
+    grid-template-columns: 1fr 90px 80px 24px !important;
+  }
+}

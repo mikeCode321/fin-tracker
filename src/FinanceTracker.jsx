@@ -1,19 +1,15 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import "./global.css";
+import "./FinanceTracker.css";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 // Kept configurable so you can update these as tax/benchmark data changes.
 const ROTH_LIMIT = 7500;
 const K401_LIMIT = 23000;
 
-const FEDERAL_BRACKETS = [
-  { max: 11600, rate: 0.1 },
-  { max: 47150, rate: 0.12 },
-  { max: 100525, rate: 0.22 },
-  { max: 191950, rate: 0.24 },
-  { max: 243725, rate: 0.32 },
-  { max: 609350, rate: 0.35 },
-  { max: Infinity, rate: 0.37 },
-];
+// Simulations are capped so the comparison view and header tab strip stay
+// usable — raise this if you need more scenarios at once.
+const MAX_SIMULATIONS = 5;
 
 // Approximate U.S. household net-worth reference points by age.
 // These are intentionally kept in one place so they can be replaced with
@@ -73,19 +69,6 @@ const NET_WORTH_BENCHMARKS = [
   },
 ];
 
-function estimateFederalTax(taxableIncome) {
-  let tax = 0;
-  let prev = 0;
-
-  for (const { max, rate } of FEDERAL_BRACKETS) {
-    if (taxableIncome <= prev) break;
-    tax += (Math.min(taxableIncome, max) - prev) * rate;
-    prev = max;
-  }
-
-  return tax;
-}
-
 function fmt(n, decimals = 0) {
   if (isNaN(n) || !isFinite(n)) return "$—";
 
@@ -129,16 +112,24 @@ function getHealthStatus(value, thresholds, reverse = false) {
   return "low";
 }
 
-function statusColor(status) {
-  if (status === "healthy") return "var(--green)";
-  if (status === "watch") return "var(--yellow)";
-  return "var(--red)";
-}
-
 function statusLabel(status) {
   if (status === "healthy") return "Healthy";
   if (status === "watch") return "Watch";
   return "Needs attention";
+}
+
+// Maps a status string ("healthy" | "watch" | anything else) to the
+// `.status-*` utility class that exposes `--status-color` for CSS to consume.
+function statusClass(status) {
+  if (status === "healthy") return "status-healthy";
+  if (status === "watch") return "status-watch";
+  return "status-low";
+}
+
+// Maps a plain boolean (e.g. "is this number non-negative?") to the same
+// kind of status utility class, for the many green/red good-or-bad values.
+function boolStatusClass(isGood) {
+  return isGood ? "status-positive" : "status-negative";
 }
 
 function projectAll({
@@ -232,47 +223,15 @@ function projectAll({
 }
 
 // ─── UI PRIMITIVES ────────────────────────────────────────────────────────────
-const Label = ({ children }) => (
-  <div
-    style={{
-      fontSize: 11,
-      fontWeight: 600,
-      letterSpacing: "0.06em",
-      color: "var(--muted)",
-      marginBottom: 4,
-      textTransform: "uppercase",
-    }}
-  >
-    {children}
-  </div>
-);
+const Label = ({ children }) => <div className="field-label">{children}</div>;
 
 const Row = ({ label, value, highlight, sub, valueColor }) => (
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "baseline",
-      padding: "7px 0",
-      borderBottom: "1px solid var(--border)",
-      gap: 12,
-    }}
-  >
+  <div className="data-row">
+    <span className={`data-row-label${sub ? " is-sub" : ""}`}>{label}</span>
     <span
-      style={{
-        color: sub ? "var(--muted)" : "var(--text)",
-        fontSize: sub ? 13 : 14,
-      }}
-    >
-      {label}
-    </span>
-    <span
-      style={{
-        fontWeight: highlight ? 700 : 500,
-        color: valueColor || (highlight ? "var(--accent)" : "var(--text)"),
-        fontSize: 14,
-        textAlign: "right",
-      }}
+      className={`data-row-value${highlight ? " is-highlight" : ""}${
+        valueColor ? ` ${valueColor}` : ""
+      }`}
     >
       {value}
     </span>
@@ -280,51 +239,11 @@ const Row = ({ label, value, highlight, sub, valueColor }) => (
 );
 
 const Card = ({ title, badge, children, accent }) => (
-  <div
-    style={{
-      background: "var(--card)",
-      borderRadius: 12,
-      border: `1px solid ${accent ? "var(--accent)" : "var(--border)"}`,
-      padding: "20px 22px",
-      marginBottom: 18,
-      boxShadow: accent ? "0 0 0 1px var(--accent-dim)" : "none",
-    }}
-  >
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 14,
-        gap: 10,
-      }}
-    >
-      <h3
-        style={{
-          margin: 0,
-          fontSize: 15,
-          fontWeight: 700,
-          color: "var(--text)",
-        }}
-      >
-        {title}
-      </h3>
+  <div className={`card${accent ? " is-accent" : ""}`}>
+    <div className="card-head">
+      <h3 className="card-title">{title}</h3>
 
-      {badge && (
-        <span
-          style={{
-            fontSize: 11,
-            background: "var(--accent-dim)",
-            color: "var(--accent)",
-            borderRadius: 99,
-            padding: "2px 10px",
-            fontWeight: 700,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {badge}
-        </span>
-      )}
+      {badge && <span className="card-badge">{badge}</span>}
     </div>
 
     {children}
@@ -332,24 +251,10 @@ const Card = ({ title, badge, children, accent }) => (
 );
 
 const Slider = ({ label, value, min, max, step, onChange, display }) => (
-  <div style={{ marginBottom: 14 }}>
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        marginBottom: 4,
-      }}
-    >
+  <div className="slider-field">
+    <div className="slider-field-head">
       <Label>{label}</Label>
-      <span
-        style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: "var(--accent)",
-        }}
-      >
-        {display}
-      </span>
+      <span className="slider-field-value">{display}</span>
     </div>
 
     <input
@@ -359,20 +264,9 @@ const Slider = ({ label, value, min, max, step, onChange, display }) => (
       step={step}
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
-      style={{
-        width: "100%",
-        accentColor: "var(--accent)",
-      }}
     />
 
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        fontSize: 10,
-        color: "var(--muted)",
-      }}
-    >
+    <div className="slider-field-range">
       <span>{min}</span>
       <span>{max}</span>
     </div>
@@ -387,30 +281,12 @@ const NumInput = ({
   suffix,
   placeholder,
 }) => (
-  <div style={{ marginBottom: 12 }}>
+  <div className="num-field">
     <Label>{label}</Label>
 
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        background: "var(--input-bg)",
-        border: "1px solid var(--border)",
-        borderRadius: 7,
-        overflow: "hidden",
-      }}
-    >
+    <div className="num-field-box">
       {prefix && (
-        <span
-          style={{
-            padding: "0 10px",
-            color: "var(--muted)",
-            fontSize: 14,
-            borderRight: "1px solid var(--border)",
-          }}
-        >
-          {prefix}
-        </span>
+        <span className="num-field-affix is-prefix">{prefix}</span>
       )}
 
       <input
@@ -418,158 +294,52 @@ const NumInput = ({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(Number(e.target.value))}
-        style={{
-          flex: 1,
-          padding: "9px 10px",
-          border: "none",
-          background: "transparent",
-          color: "var(--text)",
-          fontSize: 14,
-          outline: "none",
-          minWidth: 0,
-        }}
+        className="num-field-input"
       />
 
       {suffix && (
-        <span
-          style={{
-            padding: "0 10px",
-            color: "var(--muted)",
-            fontSize: 13,
-          }}
-        >
-          {suffix}
-        </span>
+        <span className="num-field-affix is-suffix">{suffix}</span>
       )}
     </div>
   </div>
 );
 
 const Tab = ({ label, active, onClick }) => (
-  <button
-    onClick={onClick}
-    style={{
-      padding: "8px 18px",
-      borderRadius: 8,
-      border: "none",
-      cursor: "pointer",
-      fontSize: 13,
-      fontWeight: 600,
-      background: active ? "var(--accent)" : "transparent",
-      color: active ? "#fff" : "var(--muted)",
-      transition: "all 0.15s",
-    }}
-  >
+  <button className={`ft-tab${active ? " is-active" : ""}`} onClick={onClick}>
     {label}
   </button>
 );
 
-const Progress = ({ value, max, color }) => (
-  <div
-    style={{
-      background: "var(--border)",
-      borderRadius: 99,
-      height: 6,
-      marginTop: 4,
-    }}
-  >
+const Progress = ({ value, max, statusClassName }) => (
+  <div className="progress-track">
     <div
+      className={`progress-fill${statusClassName ? ` ${statusClassName}` : ""}`}
       style={{
         width: `${Math.min(Math.max(value / (max || 1), 0), 1) * 100}%`,
-        background: color || "var(--accent)",
-        borderRadius: 99,
-        height: 6,
-        transition: "width 0.3s",
       }}
     />
   </div>
 );
 
-const InfoBox = ({
-  children,
-  color = "var(--accent)",
-  bg = "var(--accent-dim)",
-}) => (
-  <div
-    style={{
-      padding: "10px 14px",
-      background: bg,
-      borderRadius: 8,
-      fontSize: 12,
-      color,
-      marginTop: 8,
-      lineHeight: 1.5,
-    }}
-  >
+const InfoBox = ({ children, variant = "accent" }) => (
+  <div className={`info-box${variant !== "accent" ? ` is-${variant}` : ""}`}>
     {children}
   </div>
 );
 
 const HealthMetric = ({ label, value, target, status }) => (
-  <div
-    style={{
-      padding: "7px 0",
-      borderBottom: "1px solid var(--border)",
-    }}
-  >
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: 8,
-      }}
-    >
-      <div style={{ minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: "var(--text)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {label}
-        </div>
+  <div className="health-metric">
+    <div className="health-metric-row">
+      <div className="health-metric-info">
+        <div className="health-metric-label">{label}</div>
 
-        <div
-          style={{
-            fontSize: 9,
-            color: "var(--muted)",
-            marginTop: 1,
-          }}
-        >
-          Target {target}
-        </div>
+        <div className="health-metric-target">Target {target}</div>
       </div>
 
-      <div
-        style={{
-          textAlign: "right",
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: 800,
-            color: statusColor(status),
-          }}
-        >
-          {value}
-        </div>
+      <div className={`health-metric-stat ${statusClass(status)}`}>
+        <div className="health-metric-value">{value}</div>
 
-        <div
-          style={{
-            fontSize: 9,
-            color: statusColor(status),
-            fontWeight: 700,
-          }}
-        >
-          {statusLabel(status)}
-        </div>
+        <div className="health-metric-status">{statusLabel(status)}</div>
       </div>
     </div>
   </div>
@@ -592,16 +362,9 @@ const CATEGORIES = [
 
 function ExpenseRow({ item, onChange, onRemove }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 130px 110px 32px",
-        gap: 8,
-        alignItems: "center",
-        marginBottom: 8,
-      }}
-    >
+    <div className="expense-row">
       <input
+        className="expense-input"
         value={item.name}
         onChange={(e) =>
           onChange({
@@ -610,18 +373,10 @@ function ExpenseRow({ item, onChange, onRemove }) {
           })
         }
         placeholder="Expense name"
-        style={{
-          padding: "7px 10px",
-          borderRadius: 7,
-          border: "1px solid var(--border)",
-          background: "var(--input-bg)",
-          color: "var(--text)",
-          fontSize: 13,
-          minWidth: 0,
-        }}
       />
 
       <select
+        className="expense-select"
         value={item.category}
         onChange={(e) =>
           onChange({
@@ -629,41 +384,18 @@ function ExpenseRow({ item, onChange, onRemove }) {
             category: e.target.value,
           })
         }
-        style={{
-          padding: "7px 10px",
-          borderRadius: 7,
-          border: "1px solid var(--border)",
-          background: "var(--input-bg)",
-          color: "var(--text)",
-          fontSize: 13,
-        }}
       >
         {CATEGORIES.map((c) => (
           <option key={c}>{c}</option>
         ))}
       </select>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          background: "var(--input-bg)",
-          border: "1px solid var(--border)",
-          borderRadius: 7,
-        }}
-      >
-        <span
-          style={{
-            padding: "0 8px",
-            color: "var(--muted)",
-            fontSize: 13,
-          }}
-        >
-          $
-        </span>
+      <div className="expense-amount">
+        <span className="expense-amount-prefix">$</span>
 
         <input
           type="number"
+          className="expense-amount-input"
           value={item.amount}
           onChange={(e) =>
             onChange({
@@ -671,29 +403,10 @@ function ExpenseRow({ item, onChange, onRemove }) {
               amount: Number(e.target.value),
             })
           }
-          style={{
-            width: "100%",
-            padding: "7px 4px",
-            border: "none",
-            background: "transparent",
-            color: "var(--text)",
-            fontSize: 13,
-            outline: "none",
-          }}
         />
       </div>
 
-      <button
-        onClick={onRemove}
-        style={{
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          color: "var(--muted)",
-          fontSize: 18,
-          lineHeight: 1,
-        }}
-      >
+      <button className="expense-remove" onClick={onRemove}>
         ×
       </button>
     </div>
@@ -714,123 +427,36 @@ function SnapshotTable({ snapshots }) {
   ];
 
   return (
-    <div style={{ overflowX: "auto", marginTop: 10 }}>
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          fontSize: 12,
-        }}
-      >
+    <div className="table-wrap">
+      <table className="data-table">
         <thead>
           <tr>
             {cols.map((c) => (
-              <th
-                key={c}
-                style={{
-                  textAlign: "right",
-                  padding: "4px 8px",
-                  color: "var(--muted)",
-                  fontWeight: 600,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {c}
-              </th>
+              <th key={c}>{c}</th>
             ))}
           </tr>
         </thead>
 
         <tbody>
           {snapshots.map((s) => (
-            <tr
-              key={s.year}
-              style={{
-                borderTop: "1px solid var(--border)",
-              }}
-            >
-              <td
-                style={{
-                  padding: "6px 8px",
-                  color: "var(--muted)",
-                  textAlign: "right",
-                }}
-              >
-                Yr {s.year}
-              </td>
+            <tr key={s.year} className="has-top-border">
+              <td className="cell-muted">Yr {s.year}</td>
 
-              <td
-                style={{
-                  padding: "6px 8px",
-                  textAlign: "right",
-                }}
-              >
-                {fmt(s.gross)}
-              </td>
+              <td>{fmt(s.gross)}</td>
 
-              <td
-                style={{
-                  padding: "6px 8px",
-                  textAlign: "right",
-                }}
-              >
-                {fmt(s.takeHome)}
-              </td>
+              <td>{fmt(s.takeHome)}</td>
 
-              <td
-                style={{
-                  padding: "6px 8px",
-                  color: "var(--accent)",
-                  fontWeight: 600,
-                  textAlign: "right",
-                }}
-              >
-                {fmt(s.roth)}
-              </td>
+              <td className="cell-accent">{fmt(s.roth)}</td>
 
-              <td
-                style={{
-                  padding: "6px 8px",
-                  color: "var(--accent)",
-                  fontWeight: 600,
-                  textAlign: "right",
-                }}
-              >
-                {fmt(s.k401)}
-              </td>
+              <td className="cell-accent">{fmt(s.k401)}</td>
 
-              <td
-                style={{
-                  padding: "6px 8px",
-                  color: "var(--accent)",
-                  fontWeight: 600,
-                  textAlign: "right",
-                }}
-              >
-                {fmt(s.brokerage)}
-              </td>
+              <td className="cell-accent">{fmt(s.brokerage)}</td>
 
-              <td
-                style={{
-                  padding: "6px 8px",
-                  color: s.cash >= 0 ? "var(--green)" : "var(--red)",
-                  fontWeight: 600,
-                  textAlign: "right",
-                }}
-              >
+              <td className={`cell-status ${boolStatusClass(s.cash >= 0)}`}>
                 {fmt(s.cash)}
               </td>
 
-              <td
-                style={{
-                  padding: "6px 8px",
-                  color: "var(--text)",
-                  fontWeight: 700,
-                  textAlign: "right",
-                }}
-              >
-                {fmt(s.total)}
-              </td>
+              <td className="cell-strong">{fmt(s.total)}</td>
             </tr>
           ))}
         </tbody>
@@ -839,7 +465,10 @@ function SnapshotTable({ snapshots }) {
   );
 }
 
-function buildProjectionFromSimulation(sim) {
+// Builds a projection for a saved simulation using the app-wide projection
+// length (years), so every simulation reflects the same "Simulation length"
+// slider value rather than a value frozen into the simulation itself.
+function buildProjectionFromSimulation(sim, years) {
   const expenses = Array.isArray(sim.expenses) ? sim.expenses : [];
   const totalExpenses = expenses.reduce(
     (sum, e) => sum + Math.max(Number(e.amount) || 0, 0),
@@ -850,12 +479,6 @@ function buildProjectionFromSimulation(sim) {
     ((Number(sim.k401Pct) || 0) / 100) * grossSalary,
     K401_LIMIT,
   );
-  const taxableIncome = Math.max(grossSalary - k401Annual, 0);
-  const federalTax = estimateFederalTax(taxableIncome);
-  const stateTax = taxableIncome * ((Number(sim.stateRate) || 0) / 100);
-  const fica = grossSalary * 0.0765;
-  const calculatedNetMonthly =
-    (grossSalary - k401Annual - federalTax - stateTax - fica) / 12;
   const netMonthly = Number(sim.actualTakeHome) || 0;
   const netAnnual = netMonthly * 12;
   const matchPct =
@@ -882,7 +505,7 @@ function buildProjectionFromSimulation(sim) {
     annualK401: k401Annual,
     annualBrokerage: brokerageAnnual,
     annualLeftover: leftoverAnnual,
-    years: Number(sim.projYears) || 20,
+    years: Number(years) || 20,
     rothRate: (Number(sim.rothRate) || 0) / 100,
     k401Rate: (Number(sim.k401Rate) || 0) / 100,
     brokerageRate: (Number(sim.brokerageRate) || 0) / 100,
@@ -912,50 +535,17 @@ function CollapsibleYearTable({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ marginBottom: 18 }}>
-      <div
-        style={{
-          background: "var(--card)",
-          borderRadius: 12,
-          border: "1px solid var(--accent)",
-          boxShadow: "0 0 0 1px var(--accent-dim)",
-          overflow: "hidden",
-        }}
-      >
-        <button
-          onClick={() => setOpen((v) => !v)}
-          style={{
-            width: "100%",
-            padding: "16px 22px",
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>
+    <div className="mb-18">
+      <div className="year-table-shell">
+        <button className="year-table-toggle" onClick={() => setOpen((v) => !v)}>
+          <span className="year-table-toggle-label">
             Year-by-year breakdown — {projYears} year projection
           </span>
-          <span
-            style={{
-              fontSize: 18,
-              color: "var(--accent)",
-              lineHeight: 1,
-              transform: open ? "rotate(180deg)" : "none",
-              transition: "transform 0.2s",
-            }}
-          >
-            ▾
-          </span>
+          <span className={`year-table-caret${open ? " is-open" : ""}`}>▾</span>
         </button>
         {open && (
-          <div style={{ padding: "0 22px 18px" }}>
-            <div
-              style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}
-            >
+          <div className="year-table-body">
+            <div className="year-table-meta">
               Starting age: {age}. Final age: {finalAge}. Salary grows{" "}
               {salaryGrowth}% annually. Cash earns {cashRate}% APY.
             </div>
@@ -972,7 +562,7 @@ function FloatingHealthPanel({
   calc,
   pct,
   getHealthStatus,
-  statusColor,
+  statusClass,
   statusLabel,
 }) {
   const [open, setOpen] = useState(false);
@@ -986,8 +576,8 @@ function FloatingHealthPanel({
   }, []);
 
   const score = calc.healthScore;
-  const scoreColor =
-    score >= 85 ? "var(--green)" : score >= 70 ? "var(--yellow)" : "var(--red)";
+  const scoreStatus = score >= 85 ? "healthy" : score >= 70 ? "watch" : "low";
+  const scoreClass = statusClass(scoreStatus);
 
   const metrics = [
     {
@@ -1057,49 +647,17 @@ function FloatingHealthPanel({
   ];
 
   const panelContent = (
-    <div style={{ padding: "0 16px 16px" }}>
+    <div className="health-panel-body">
       {/* Score row */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "12px 0",
-          borderBottom: "1px solid var(--border)",
-          marginBottom: 8,
-        }}
-      >
+      <div className={`health-score-row ${scoreClass}`}>
         <div>
-          <div
-            style={{
-              fontSize: 9,
-              color: "var(--muted)",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
-            Overall score
-          </div>
-          <div
-            style={{
-              fontSize: 24,
-              fontWeight: 800,
-              color: scoreColor,
-              lineHeight: 1.1,
-              marginTop: 2,
-            }}
-          >
+          <div className="health-score-label">Overall score</div>
+          <div className="health-score-value">
             {score}
-            <span
-              style={{ fontSize: 11, color: "var(--muted)", fontWeight: 500 }}
-            >
-              /100
-            </span>
+            <span className="health-score-suffix">/100</span>
           </div>
         </div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: scoreColor }}>
-          {calc.healthLabel}
-        </div>
+        <div className="health-score-tag">{calc.healthLabel}</div>
       </div>
       {metrics.map((m) => (
         <HealthMetric
@@ -1119,98 +677,27 @@ function FloatingHealthPanel({
       <>
         {/* Floating button */}
         <button
+          className={`health-fab ${scoreClass}`}
           onClick={() => setOpen((v) => !v)}
-          style={{
-            position: "fixed",
-            bottom: 20,
-            right: 20,
-            zIndex: 200,
-            width: 52,
-            height: 52,
-            borderRadius: "50%",
-            border: `2px solid ${scoreColor}`,
-            background: "var(--card)",
-            color: scoreColor,
-            fontSize: 11,
-            fontWeight: 800,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "column",
-            boxShadow: `0 0 0 4px ${scoreColor}22, 0 4px 24px rgba(0,0,0,0.5)`,
-            lineHeight: 1.1,
-          }}
         >
-          <span style={{ fontSize: 15 }}>❤</span>
+          <span className="health-fab-heart">❤</span>
           <span>{score}</span>
         </button>
 
         {/* Backdrop */}
         {open && (
-          <div
-            onClick={() => setOpen(false)}
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 199,
-              background: "rgba(0,0,0,0.5)",
-            }}
-          />
+          <div className="health-backdrop" onClick={() => setOpen(false)} />
         )}
 
         {/* Drawer */}
-        <div
-          style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: 200,
-            background: "var(--card)",
-            borderTop: `2px solid ${scoreColor}`,
-            borderRadius: "16px 16px 0 0",
-            transform: open ? "translateY(0)" : "translateY(105%)",
-            transition: "transform 0.28s cubic-bezier(0.32,0.72,0,1)",
-            maxHeight: "80vh",
-            overflowY: "auto",
-          }}
-        >
-          <div
-            style={{
-              padding: "12px 16px 0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}
-            >
+        <div className={`health-drawer ${scoreClass}${open ? " is-open" : ""}`}>
+          <div className="health-drawer-head">
+            <div className="health-drawer-title">
               Financial Health{" "}
-              <span
-                style={{
-                  fontSize: 11,
-                  background: "var(--accent-dim)",
-                  color: "var(--accent)",
-                  borderRadius: 99,
-                  padding: "1px 8px",
-                  marginLeft: 6,
-                }}
-              >
-                {score}/100
-              </span>
             </div>
             <button
+              className="health-close-btn"
               onClick={() => setOpen(false)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "var(--muted)",
-                fontSize: 22,
-                cursor: "pointer",
-                padding: "0 4px",
-              }}
             >
               ×
             </button>
@@ -1227,101 +714,24 @@ function FloatingHealthPanel({
       {/* Toggle button when collapsed */}
       {!open && (
         <button
+          className={`health-toggle-tab ${scoreClass}`}
           onClick={() => setOpen(true)}
-          style={{
-            position: "fixed",
-            top: "50%",
-            right: 0,
-            zIndex: 200,
-            transform: "translateY(-50%)",
-            background: "var(--card)",
-            border: `1px solid ${scoreColor}`,
-            borderRight: "none",
-            borderRadius: "10px 0 0 10px",
-            padding: "12px 8px",
-            cursor: "pointer",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 6,
-            boxShadow: `-2px 0 16px rgba(0,0,0,0.3)`,
-          }}
         >
-          <span style={{ fontSize: 11, fontWeight: 800, color: scoreColor }}>
-            {score}
-          </span>
-          <span
-            style={{
-              fontSize: 9,
-              color: "var(--muted)",
-              writingMode: "vertical-rl",
-              textOrientation: "mixed",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
-          >
-            Health
-          </span>
-          <span style={{ fontSize: 10, color: scoreColor }}>◂</span>
+          <span className="health-toggle-score">{score}</span>
+          <span className="health-toggle-label">Health</span>
+          <span className="health-toggle-caret">◂</span>
         </button>
       )}
 
       {/* Floating panel */}
-      <div
-        style={{
-          position: "fixed",
-          top: 70,
-          right: open ? 0 : -320,
-          width: 300,
-          zIndex: 200,
-          background: "var(--card)",
-          border: `1px solid ${scoreColor}`,
-          borderRight: "none",
-          borderRadius: "12px 0 0 12px",
-          boxShadow: "-4px 0 32px rgba(0,0,0,0.4)",
-          transition: "right 0.25s cubic-bezier(0.32,0.72,0,1)",
-          maxHeight: "calc(100vh - 90px)",
-          overflowY: "auto",
-        }}
-      >
-        <div
-          style={{
-            padding: "12px 16px 0",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            position: "sticky",
-            top: 0,
-            background: "var(--card)",
-            zIndex: 1,
-            borderBottom: "1px solid var(--border)",
-          }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+      <div className={`health-panel ${scoreClass}${open ? " is-open" : ""}`}>
+        <div className="health-panel-head">
+          <div className="health-panel-title">
             Financial Health{" "}
-            <span
-              style={{
-                fontSize: 11,
-                background: "var(--accent-dim)",
-                color: "var(--accent)",
-                borderRadius: 99,
-                padding: "1px 8px",
-                marginLeft: 6,
-              }}
-            >
-              {score}/100
-            </span>
           </div>
           <button
+            className="health-close-btn"
             onClick={() => setOpen(false)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--muted)",
-              fontSize: 20,
-              cursor: "pointer",
-              padding: "0 2px",
-            }}
           >
             ×
           </button>
@@ -1333,72 +743,40 @@ function FloatingHealthPanel({
 }
 
 function Summary({ calc }) {
+  const stats = [
+    {
+      label: "Take-home / mo",
+      value: fmt(calc.netMonthly),
+      className: "u-text-green",
+    },
+    {
+      label: "Monthly expenses",
+      value: fmt(calc.totalExpenses),
+      className: "u-text-red",
+    },
+    {
+      label: "After expenses",
+      value: fmt(calc.afterExpenses),
+      className: calc.afterExpenses >= 0 ? "u-text-green" : "u-text-red",
+    },
+    {
+      label: "Investing / mo",
+      value: fmt(calc.totalInvesting),
+      className: "u-text-accent",
+    },
+    {
+      label: "Cash surplus / mo",
+      value: fmt(calc.leftoverMonthly),
+      className: calc.leftoverMonthly >= 0 ? "u-text-green" : "u-text-red",
+    },
+  ];
+
   return (
-    <div
-      className="five-col"
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(5, 1fr)",
-        gap: 12,
-        marginBottom: 24,
-      }}
-    >
-      {[
-        {
-          label: "Take-home / mo",
-          value: fmt(calc.netMonthly),
-          color: "var(--green)",
-        },
-        {
-          label: "Monthly expenses",
-          value: fmt(calc.totalExpenses),
-          color: "var(--red)",
-        },
-        {
-          label: "After expenses",
-          value: fmt(calc.afterExpenses),
-          color: calc.afterExpenses >= 0 ? "var(--green)" : "var(--red)",
-        },
-        {
-          label: "Investing / mo",
-          value: fmt(calc.totalInvesting),
-          color: "var(--accent)",
-        },
-        {
-          label: "Cash surplus / mo",
-          value: fmt(calc.leftoverMonthly),
-          color: calc.leftoverMonthly >= 0 ? "var(--green)" : "var(--red)",
-        },
-      ].map((s) => (
-        <div
-          key={s.label}
-          style={{
-            background: "var(--card)",
-            border: "1px solid var(--border)",
-            borderRadius: 10,
-            padding: "14px 16px",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 11,
-              color: "var(--muted)",
-              marginBottom: 4,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-          >
-            {s.label}{" "}
-          </div>
-          <div
-            style={{
-              fontSize: 18,
-              fontWeight: 800,
-              color: s.color,
-            }}
-          >
-            {s.value}
-          </div>
+    <div className="five-col mb-24">
+      {stats.map((s) => (
+        <div key={s.label} className="stat-card">
+          <div className="stat-label">{s.label} </div>
+          <div className={`stat-value ${s.className}`}>{s.value}</div>
         </div>
       ))}
     </div>
@@ -1416,6 +794,7 @@ function CompareView({
   selectGraphMetric,
   toggleCompareSimulation,
   toggleCompareMetric,
+  projYears,
 }) {
   const selectedIds = compareSimulationIds.length
     ? compareSimulationIds
@@ -1426,13 +805,12 @@ function CompareView({
   const getSeriesValue = (snapshot, key) => snapshot?.[key] ?? 0;
   const snapshots = selectedSims
     .reduce((all, sim) => {
-      (
-        sim.projection?.snapshots ||
-        buildProjectionFromSimulation(sim).snapshots
-      ).forEach((snapshot) => {
-        if (!all.some((x) => x.year === snapshot.year))
-          all.push({ year: snapshot.year });
-      });
+      buildProjectionFromSimulation(sim, projYears).snapshots.forEach(
+        (snapshot) => {
+          if (!all.some((x) => x.year === snapshot.year))
+            all.push({ year: snapshot.year });
+        },
+      );
       return all;
     }, [])
     .sort((a, b) => a.year - b.year);
@@ -1442,96 +820,47 @@ function CompareView({
   return (
     <div>
       <Card title="Compare simulations" accent>
-        <div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            <button
-              onClick={() => setCompareSimulationIds([])}
-              style={{
-                padding: "7px 10px",
-                borderRadius: 8,
-                border: "1px solid var(--border)",
-                background:
-                  compareSimulationIds.length === 0
-                    ? "var(--accent-dim)"
-                    : "var(--input-bg)",
-                color:
-                  compareSimulationIds.length === 0
-                    ? "var(--accent)"
-                    : "var(--muted)",
-                cursor: "pointer",
-                fontWeight: 700,
-                fontSize: 12,
-              }}
-            >
-              All simulations
-            </button>
-            {simulations.map((sim) => {
-              const active = selectedIds.includes(sim.id);
-              return (
-                <button
-                  key={sim.id}
-                  onClick={() => toggleCompareSimulation(sim.id)}
-                  style={{
-                    padding: "7px 10px",
-                    borderRadius: 8,
-                    border: "1px solid var(--border)",
-                    background: active
-                      ? "var(--accent-dim)"
-                      : "var(--input-bg)",
-                    color: active ? "var(--accent)" : "var(--muted)",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    fontSize: 12,
-                  }}
-                >
-                  {active ? "✓ " : ""}
-                  {sim.name}
-                </button>
-              );
-            })}
-          </div>
+        <div className="chip-row">
+          <button
+            className={`chip-btn${compareSimulationIds.length === 0 ? " is-active" : ""}`}
+            onClick={() => setCompareSimulationIds([])}
+          >
+            All simulations
+          </button>
+          {simulations.map((sim) => {
+            const active = selectedIds.includes(sim.id);
+            return (
+              <button
+                key={sim.id}
+                className={`chip-btn${active ? " is-active" : ""}`}
+                onClick={() => toggleCompareSimulation(sim.id)}
+              >
+                {active ? "✓ " : ""}
+                {sim.name}
+              </button>
+            );
+          })}
         </div>
       </Card>
 
       {selectedSims.length === 0 ? (
         <Card title="No simulations selected">
-          <div style={{ color: "var(--muted)", fontSize: 13 }}>
+          <div className="u-text-muted" style={{ fontSize: 13 }}>
             Select at least one simulation to compare.
           </div>
         </Card>
       ) : (
         <>
           <Card title="Growth graph" accent>
-            <div style={{ marginBottom: 12 }}>
-              <div
-                style={{
-                  color: "var(--muted)",
-                  fontSize: 12,
-                  marginBottom: 10,
-                }}
-              >
-                Metric to graph — one metric keeps differences readable across
-                simulations.
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <div className="mb-18" style={{ marginBottom: 12 }}>
+              <div className="chip-row">
                 {compareMetrics.map((metric) => {
                   const active = graphMetricKey === metric.key;
                   return (
                     <button
                       key={`graph-${metric.key}`}
+                      className={`chip-btn${active ? " is-active-alt" : ""}`}
                       onClick={() => selectGraphMetric(metric.key)}
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: 8,
-                        border: "1px solid var(--border)",
-                        background: active
-                          ? "var(--accent-dim)"
-                          : "var(--input-bg)",
-                        color: active ? "var(--text)" : "var(--muted)",
-                        cursor: "pointer",
-                        fontWeight: 700,
-                        fontSize: 12,
-                      }}
                     >
                       {active ? "● " : ""}
                       {metric.label}
@@ -1544,6 +873,7 @@ function CompareView({
               simulations={selectedSims}
               metricKey={graphMetricKey}
               metric={metricMap[graphMetricKey]}
+              projYears={projYears}
             />
           </Card>
 
@@ -1551,34 +881,17 @@ function CompareView({
             title={`Comparison table${finalYear ? ` — through year ${finalYear}` : ""}`}
           >
             <div style={{ marginBottom: 12 }}>
-              <div
-                style={{
-                  color: "var(--muted)",
-                  fontSize: 12,
-                  marginBottom: 10,
-                }}
-              >
+              <div className="u-text-muted" style={{ fontSize: 12, marginBottom: 10 }}>
                 Table metrics — choose which columns appear in the table below.
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <div className="chip-row">
                 {compareMetrics.map((metric) => {
                   const active = compareMetricKeys.includes(metric.key);
                   return (
                     <button
                       key={metric.key}
+                      className={`chip-btn${active ? " is-active-alt" : ""}`}
                       onClick={() => toggleCompareMetric(metric.key)}
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: 8,
-                        border: "1px solid var(--border)",
-                        background: active
-                          ? "var(--accent-dim)"
-                          : "var(--input-bg)",
-                        color: active ? "var(--text)" : "var(--muted)",
-                        cursor: "pointer",
-                        fontWeight: 700,
-                        fontSize: 12,
-                      }}
                     >
                       {active ? "✓ " : ""}
                       {metric.label}
@@ -1587,38 +900,16 @@ function CompareView({
                 })}
               </div>
             </div>
-            <div style={{ overflowX: "auto" }}>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  fontSize: 12,
-                  minWidth: 700,
-                }}
-              >
+            <div className="compare-table-wrap">
+              <table className="compare-table">
                 <thead>
                   <tr>
-                    <th
-                      style={{
-                        textAlign: "left",
-                        padding: "7px 8px",
-                        color: "var(--muted)",
-                        borderBottom: "1px solid var(--border)",
-                      }}
-                    >
-                      Year
-                    </th>
+                    <th className="is-year">Year</th>
                     {selectedSims.flatMap((sim) =>
                       compareMetricKeys.map((key) => (
                         <th
                           key={`${sim.id}-${key}`}
-                          style={{
-                            textAlign: "right",
-                            padding: "7px 8px",
-                            color: metricMap[key].color,
-                            borderBottom: "1px solid var(--border)",
-                            whiteSpace: "nowrap",
-                          }}
+                          className={`is-metric metric-${key}`}
                         >
                           {sim.name} · {metricMap[key].label}
                         </th>
@@ -1629,31 +920,15 @@ function CompareView({
                 <tbody>
                   {snapshots.map((row) => (
                     <tr key={row.year}>
-                      <td
-                        style={{
-                          padding: "7px 8px",
-                          color: "var(--muted)",
-                          borderBottom: "1px solid var(--border)",
-                        }}
-                      >
-                        Yr {row.year}
-                      </td>
+                      <td className="is-year">Yr {row.year}</td>
                       {selectedSims.flatMap((sim) =>
                         compareMetricKeys.map((key) => {
-                          const snapshot = (
-                            sim.projection?.snapshots ||
-                            buildProjectionFromSimulation(sim).snapshots
-                          ).find((s) => s.year === row.year);
+                          const snapshot = buildProjectionFromSimulation(
+                            sim,
+                            projYears,
+                          ).snapshots.find((s) => s.year === row.year);
                           return (
-                            <td
-                              key={`${sim.id}-${key}-${row.year}`}
-                              style={{
-                                textAlign: "right",
-                                padding: "7px 8px",
-                                borderBottom: "1px solid var(--border)",
-                                fontWeight: 650,
-                              }}
-                            >
+                            <td key={`${sim.id}-${key}-${row.year}`} className="is-metric">
                               {fmt(getSeriesValue(snapshot, key))}
                             </td>
                           );
@@ -1688,14 +963,14 @@ const SIM_COLORS = [
   "#a78bfa",
 ];
 
-function ComparisonChart({ simulations, metricKey, metric }) {
+function ComparisonChart({ simulations, metricKey, metric, projYears }) {
   const width = 960;
   const height = 420;
   const pad = { left: 78, right: 24, top: 24, bottom: 42 };
   const innerW = width - pad.left - pad.right;
   const innerH = height - pad.top - pad.bottom;
   const getSnapshots = (sim) =>
-    sim.projection?.snapshots || buildProjectionFromSimulation(sim).snapshots;
+    buildProjectionFromSimulation(sim, projYears).snapshots;
   const maxYear = Math.max(
     1,
     ...simulations.flatMap((sim) => getSnapshots(sim).map((x) => x.year)),
@@ -1713,15 +988,10 @@ function ComparisonChart({ simulations, metricKey, metric }) {
   const dash = ["0", "7 5", "2 4", "10 5 2 5", "14 5 2 5 2 5"];
 
   return (
-    <div style={{ overflowX: "auto" }}>
+    <div className="chart-wrap">
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        style={{
-          width: "100%",
-          minWidth: 680,
-          height: "auto",
-          display: "block",
-        }}
+        className="chart-svg"
         role="img"
         aria-label={`${metric?.label || metricKey} simulation comparison chart`}
       >
@@ -1797,33 +1067,12 @@ function ComparisonChart({ simulations, metricKey, metric }) {
           );
         })}
       </svg>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "8px 14px",
-          padding: "8px 4px 0",
-          fontSize: 12,
-        }}
-      >
+      <div className="chart-legend">
         {simulations.map((sim, i) => (
-          <div
-            key={`${sim.id}-legend`}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              color: "var(--text)",
-            }}
-          >
+          <div key={`${sim.id}-legend`} className="chart-legend-item">
             <span
-              style={{
-                width: 20,
-                height: 3,
-                display: "inline-block",
-                background: SIM_COLORS[i % SIM_COLORS.length],
-                borderRadius: 2,
-              }}
+              className="chart-legend-swatch"
+              style={{ background: SIM_COLORS[i % SIM_COLORS.length] }}
             />
             <span>{sim.name}</span>
           </div>
@@ -1899,6 +1148,8 @@ export default function App() {
   const [initCash, setInitCash] = useState(0);
   const [cashRate, setCashRate] = useState(4);
 
+  // Global projection setting — applies to every simulation, including in
+  // comparisons, rather than being saved per-simulation.
   const [projYears, setProjYears] = useState(20);
 
   const nextId = () => Date.now();
@@ -1906,6 +1157,10 @@ export default function App() {
   // ─── SIMULATIONS ─────────────────────────────────────────────────────────────
   // Each simulation keeps a complete copy of its inputs, so scenarios can be
   // branched, switched, and referenced without overwriting one another.
+  // Projection length is intentionally NOT part of a simulation's saved
+  // state — it's a single global control (see `projYears` above) so that
+  // changing it applies consistently to every simulation everywhere,
+  // including side-by-side comparisons.
   const defaultExpenses = [
     { id: 1, name: "Rent / Mortgage", category: "Housing", amount: 1500 },
     { id: 2, name: "Groceries", category: "Food", amount: 400 },
@@ -1928,14 +1183,16 @@ export default function App() {
   const [compareSimulationIds, setCompareSimulationIds] = useState([]);
 
   const compareMetrics = [
-    { key: "total", label: "Total net worth", color: "var(--accent)" },
-    { key: "roth", label: "Roth IRA", color: "var(--green)" },
-    { key: "k401", label: "401k", color: "var(--yellow)" },
-    { key: "brokerage", label: "Brokerage", color: "#c084fc" },
-    { key: "cash", label: "Cash", color: "#fb7185" },
-    { key: "gross", label: "Gross income", color: "#38bdf8" },
-    { key: "takeHome", label: "Take-home", color: "#a3e635" },
+    { key: "total", label: "Total net worth" },
+    { key: "roth", label: "Roth IRA" },
+    { key: "k401", label: "401k" },
+    { key: "brokerage", label: "Brokerage" },
+    { key: "cash", label: "Cash" },
+    { key: "gross", label: "Gross income" },
+    { key: "takeHome", label: "Take-home" },
   ];
+
+  const atSimulationLimit = simulations.length >= MAX_SIMULATIONS;
 
   const getCurrentSimulation = () => ({
     id: activeSimulationId,
@@ -1961,7 +1218,6 @@ export default function App() {
     brokerageRate,
     initCash,
     cashRate,
-    projYears,
   });
 
   const applySimulation = (sim) => {
@@ -1987,7 +1243,7 @@ export default function App() {
     setBrokerageRate(sim.brokerageRate ?? 7);
     setInitCash(sim.initCash ?? 0);
     setCashRate(sim.cashRate ?? 4);
-    setProjYears(sim.projYears ?? 20);
+    // Note: projYears is intentionally left untouched here — it's global.
   };
 
   const freshSimulation = (id, name) => ({
@@ -2014,7 +1270,6 @@ export default function App() {
     brokerageRate: 7,
     initCash: 0,
     cashRate: 4,
-    projYears: 20,
   });
 
   // JSON-file persistence is handled by the small local Node API.
@@ -2041,9 +1296,12 @@ export default function App() {
               (s) => s.id === parsed.activeSimulationId,
             ) || parsed.simulations[0];
 
-          setSimulations(parsed.simulations);
+          setSimulations(parsed.simulations.slice(0, MAX_SIMULATIONS));
           setActiveSimulationId(active.id);
           applySimulation(active);
+          if (typeof parsed.projYears === "number") {
+            setProjYears(parsed.projYears);
+          }
         } else {
           const initial = freshSimulation(Date.now(), "Simulation 1");
           setActiveSimulationId(initial.id);
@@ -2086,6 +1344,7 @@ export default function App() {
       stateRef.current = {
         simulations: next,
         activeSimulationId,
+        projYears,
       };
 
       return next;
@@ -2136,6 +1395,7 @@ export default function App() {
             version: 1,
             simulations: payload.simulations,
             activeSimulationId: payload.activeSimulationId,
+            projYears: payload.projYears,
           }),
         });
 
@@ -2154,6 +1414,8 @@ export default function App() {
   }, []);
 
   const createNewSimulation = () => {
+    if (atSimulationLimit) return;
+
     const id = nextId();
     const current = getCurrentSimulation();
     // Copy all current values into the new sim, only override id and name
@@ -2235,20 +1497,6 @@ export default function App() {
 
     const k401Monthly = k401Annual / 12;
 
-    const taxableIncome = Math.max(grossSalary - k401Annual, 0);
-
-    const federalTax = estimateFederalTax(taxableIncome);
-
-    const stateTax = taxableIncome * (stateRate / 100);
-
-    const fica = grossSalary * 0.0765;
-
-    const totalTax = federalTax + stateTax + fica;
-
-    const calcNetAnnual = grossSalary - k401Annual - totalTax;
-
-    const calcNetMonthly = calcNetAnnual / 12;
-
     const netMonthly = actualTakeHome;
 
     const netAnnual = netMonthly * 12;
@@ -2256,20 +1504,6 @@ export default function App() {
     const matchPct = Math.min(employerMatch, employerMatchMax) / 100;
 
     const employerMatchAmt = grossSalary * matchPct;
-
-    const taxWithout =
-      estimateFederalTax(grossSalary) + grossSalary * (stateRate / 100);
-
-    const taxSavings = taxWithout - federalTax - stateTax;
-
-    let marginalRate = 0.37;
-
-    for (const { max, rate } of FEDERAL_BRACKETS) {
-      if (taxableIncome <= max) {
-        marginalRate = rate;
-        break;
-      }
-    }
 
     const totalExpenses = expenses.reduce(
       (s, e) => s + Math.max(e.amount, 0),
@@ -2411,17 +1645,9 @@ export default function App() {
     return {
       k401Annual,
       k401Monthly,
-      taxableIncome,
-      federalTax,
-      stateTax,
-      fica,
-      totalTax,
-      calcNetMonthly,
       netMonthly,
       netAnnual,
       employerMatchAmt,
-      taxSavings,
-      marginalRate,
       totalExpenses,
       afterExpenses,
       rothMonthly,
@@ -2500,1292 +1726,819 @@ export default function App() {
     return { target, hit, reached };
   });
 
-  const styles = `
-    :root {
-      --bg: #0f1117;
-      --card: #1a1d27;
-      --border: #2a2d3a;
-      --accent: #6c8ef5;
-      --accent-dim: rgba(108,142,245,0.12);
-      --text: #e8eaf0;
-      --muted: #7b7f94;
-      --input-bg: #12151e;
-      --green: #4ade80;
-      --red: #f87171;
-      --yellow: #fbbf24;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    input[type=range] {
-      height: 4px;
-    }
-
-    input, select, button {
-      font-family: inherit;
-    }
-
-    table td, table th {
-      font-variant-numeric: tabular-nums;
-    }
-
-    @media (max-width: 800px) {
-      .two-col {
-        grid-template-columns: 1fr !important;
-      }
-
-      .five-col {
-        grid-template-columns: repeat(2, 1fr) !important;
-      }
-
-      .expense-row,
-      .expense-header {
-        grid-template-columns: 1fr 100px 90px 28px !important;
-      }
-    }
-
-    @media (max-width: 520px) {
-      .five-col {
-        grid-template-columns: 1fr !important;
-      }
-
-      .expense-row,
-      .expense-header {
-        grid-template-columns: 1fr 90px 80px 24px !important;
-      }
-    }
-  `;
-
-  const toggleStyle = (active) => ({
-    padding: "6px 14px",
-    borderRadius: 7,
-    border: "1px solid var(--border)",
-    cursor: "pointer",
-    fontSize: 12,
-    fontWeight: 600,
-    background: active ? "var(--accent)" : "var(--input-bg)",
-    color: active ? "#fff" : "var(--muted)",
-  });
+  // Maps the 4-bucket net-worth-vs-benchmark status into the same
+  // healthy/watch/low status vocabulary the rest of the app uses for color.
+  const netWorthStatusBucket = (status) =>
+    status === "90th+" || status === "75th–90th"
+      ? "healthy"
+      : status === "50th–75th"
+        ? "watch"
+        : "low";
 
   return (
-    <>
-      <style>{styles}</style>
+    <div className="ft-shell">
+      <div className="ft-header">
+        <div className="ft-header-row">
+          <div>
+            <div className="ft-brand">FirePhin</div>
+          </div>
 
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "var(--bg)",
-          paddingBottom: 60,
-        }}
-      >
-        <div
-          style={{
-            background: "var(--card)",
-            borderBottom: "1px solid var(--border)",
-            padding: "16px 24px",
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-          }}
-        >
-          <div
-            style={{
-              maxWidth: 1020,
-              margin: "0 auto",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 10,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 800,
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                Allocator
-              </div>
-
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "var(--muted)",
-                }}
-              >
-                Personal finance & investment tracker — local JSON storage
-              </div>
-            </div>
-
+          <div className="ft-header-right">
             <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                maxWidth: "100%",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color:
-                    saveStatus === "error"
-                      ? "var(--red)"
-                      : saveStatus === "saving"
-                        ? "var(--yellow)"
-                        : saveStatus === "loading"
-                          ? "var(--muted)"
-                          : "var(--green)",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {saveStatus === "loading"
-                  ? "Loading…"
+              className={`ft-save-status ${
+                saveStatus === "error"
+                  ? "status-low"
                   : saveStatus === "saving"
-                    ? "Saving…"
-                    : saveStatus === "error"
-                      ? "Save failed"
-                      : "Saved"}
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  maxWidth: "100%",
-                  overflowX: "auto",
-                  padding: "2px",
-                }}
-              >
-                {simulations.map((sim, index) => (
-                  <button
-                    key={sim.id}
-                    onClick={() => switchSimulation(sim.id)}
-                    title={sim.name}
-                    style={{
-                      padding: "7px 10px",
-                      borderRadius: 8,
-                      border: "1px solid var(--border)",
-                      cursor: "pointer",
-                      background:
-                        sim.id === activeSimulationId
-                          ? "var(--accent-dim)"
-                          : "var(--input-bg)",
-                      color:
-                        sim.id === activeSimulationId
-                          ? "var(--accent)"
-                          : "var(--muted)",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    <span>{sim.name || `Simulation ${index + 1}`}</span>
-                    {simulations.length > 1 && (
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteSimulation(sim.id);
-                        }}
-                        role="button"
-                        aria-label={`Delete ${sim.name || `Simulation ${index + 1}`}`}
-                        title="Delete simulation"
-                        style={{
-                          marginLeft: 8,
-                          color: "var(--muted)",
-                          fontSize: 14,
-                          lineHeight: 1,
-                        }}
-                      >
-                        ×
-                      </span>
-                    )}
-                  </button>
-                ))}
-                <button
-                  onClick={createNewSimulation}
-                  aria-label="Create new simulation"
-                  title="New simulation"
-                  style={{
-                    width: 34,
-                    height: 34,
-                    flex: "0 0 auto",
-                    borderRadius: 8,
-                    border: "1px solid var(--border)",
-                    cursor: "pointer",
-                    background: "var(--input-bg)",
-                    color: "var(--accent)",
-                    fontSize: 22,
-                    fontWeight: 500,
-                    lineHeight: 1,
-                  }}
-                >
-                  +
-                </button>
-              </div>
+                    ? "status-watch"
+                    : saveStatus === "loading"
+                      ? ""
+                      : "status-positive"
+              }`}
+            >
+              {saveStatus === "loading"
+                ? "Loading…"
+                : saveStatus === "saving"
+                  ? "Saving…"
+                  : saveStatus === "error"
+                    ? "Save failed"
+                    : "Saved"}
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: 6,
-                background: "var(--input-bg)",
-                padding: 4,
-                borderRadius: 10,
-                border: "1px solid var(--border)",
-              }}
-            >
-              {["income", "expenses", "invest", "outlook", "compare"].map(
-                (t) => (
-                  <Tab
-                    key={t}
-                    label={
-                      {
-                        income: "Income",
-                        expenses: "Expenses",
-                        invest: "Investments",
-                        outlook: "Outlook",
-                        compare: "Compare",
-                      }[t]
-                    }
-                    active={tab === t}
-                    onClick={() => setTab(t)}
-                  />
-                ),
-              )}
+            <div className="ft-sim-tabs">
+              {simulations.map((sim, index) => (
+                <button
+                  key={sim.id}
+                  className={`ft-sim-tab${sim.id === activeSimulationId ? " is-active" : ""}`}
+                  onClick={() => switchSimulation(sim.id)}
+                  title={sim.name}
+                >
+                  <span>{sim.name || `Simulation ${index + 1}`}</span>
+                  {simulations.length > 1 && (
+                    <span
+                      className="ft-sim-tab-delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteSimulation(sim.id);
+                      }}
+                      role="button"
+                      aria-label={`Delete ${sim.name || `Simulation ${index + 1}`}`}
+                      title="Delete simulation"
+                    >
+                      ×
+                    </span>
+                  )}
+                </button>
+              ))}
+              <button
+                className="ft-sim-add"
+                onClick={createNewSimulation}
+                disabled={atSimulationLimit}
+                aria-label="Create new simulation"
+                title={
+                  atSimulationLimit
+                    ? `Maximum of ${MAX_SIMULATIONS} simulations reached`
+                    : "New simulation"
+                }
+              >
+                +
+              </button>
+            </div>
+            {atSimulationLimit && (
+              <span className="ft-sim-limit-note">
+                Max {MAX_SIMULATIONS} simulations
+              </span>
+            )}
+          </div>
+
+          <div className="ft-tab-bar">
+            {["income", "expenses", "invest", "outlook", "compare"].map(
+              (t) => (
+                <Tab
+                  key={t}
+                  label={
+                    {
+                      income: "Income",
+                      expenses: "Expenses",
+                      invest: "Investments",
+                      outlook: "Outlook",
+                      compare: "Compare",
+                    }[t]
+                  }
+                  active={tab === t}
+                  onClick={() => setTab(t)}
+                />
+              ),
+            )}
+          </div>
+
+          {/* GLOBAL PROJECTION SETTINGS */}
+          <div className="ft-projection-bar">
+            <div className="ft-projection-row">
+              <span className="ft-projection-title">Projection Settings</span>
+
+              <div className="ft-projection-slider">
+                <span className="ft-projection-slider-label">
+                  Simulation length
+                </span>
+                <input
+                  type="range"
+                  min={1}
+                  max={40}
+                  step={1}
+                  value={projYears}
+                  onChange={(e) => setProjYears(Number(e.target.value))}
+                />
+                <span className="ft-projection-value">{projYears} yrs</span>
+              </div>
+
+              <span className="ft-age-range">
+                Age {age} → {finalAge}
+              </span>
             </div>
           </div>
         </div>
+      </div>
 
-        <div
-          style={{
-            maxWidth: 1020,
-            margin: "0 auto",
-            padding: "24px 16px",
-          }}
-        >
-          {/* FINANCIAL HEALTH - floating panel */}
-          <FloatingHealthPanel
-            calc={calc}
-            pct={pct}
-            getHealthStatus={getHealthStatus}
-            statusColor={statusColor}
-            statusLabel={statusLabel}
+      <div className="ft-main">
+        {/* FINANCIAL HEALTH - floating panel */}
+        <FloatingHealthPanel
+          calc={calc}
+          pct={pct}
+          getHealthStatus={getHealthStatus}
+          statusClass={statusClass}
+          statusLabel={statusLabel}
+        />
+
+        {tab === "compare" && (
+          <CompareView
+            simulations={simulations}
+            compareSimulationIds={compareSimulationIds}
+            setCompareSimulationIds={setCompareSimulationIds}
+            compareMetricKeys={compareMetricKeys}
+            compareMetrics={compareMetrics}
+            graphMetricKey={graphMetricKey}
+            selectGraphMetric={selectGraphMetric}
+            toggleCompareSimulation={toggleCompareSimulation}
+            toggleCompareMetric={toggleCompareMetric}
+            projYears={projYears}
           />
-          
-          {/* INCOME */}
-          {tab === "compare" && (
-            <>
-              <CompareView
-                simulations={simulations}
-                compareSimulationIds={compareSimulationIds}
-                setCompareSimulationIds={setCompareSimulationIds}
-                compareMetricKeys={compareMetricKeys}
-                compareMetrics={compareMetrics}
-                graphMetricKey={graphMetricKey}
-                selectGraphMetric={selectGraphMetric}
-                toggleCompareSimulation={toggleCompareSimulation}
-                toggleCompareMetric={toggleCompareMetric}
-              />
-            </>
-          )}
+        )}
 
-          {tab === "income" && (
-            <>
-              <Summary calc={calc} />
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 18,
-                }}
-              >
-                <Card title="Take-Home Pay">
+        {tab === "income" && (
+          <>
+            <Summary calc={calc} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <Card title="Take-Home Pay">
+                <NumInput
+                  label="Actual monthly take-home"
+                  value={actualTakeHome}
+                  onChange={setActualTakeHome}
+                />
+
+                <div style={{ marginTop: 16 }}>
                   <NumInput
-                    label="Actual monthly take-home"
-                    value={actualTakeHome}
-                    onChange={setActualTakeHome}
+                    label="Gross annual salary"
+                    value={grossSalary}
+                    onChange={setGrossSalary}
                   />
+
+                  <NumInput
+                    label="Current age"
+                    value={age}
+                    onChange={setAge}
+                    prefix=""
+                  />
+
+                  <Slider
+                    label="Annual merit / salary increase"
+                    value={salaryGrowth}
+                    min={0}
+                    max={10}
+                    step={0.5}
+                    onChange={setSalaryGrowth}
+                    display={salaryGrowth + "%"}
+                  />
+
                   <InfoBox>
-                    Your real paycheck after all deductions — taxes, 401k,
-                    benefits, etc.
+                    Take-home increases by {salaryGrowth}%/yr in projections —
+                    same rate as gross salary growth.
                   </InfoBox>
 
-                  <div
-                    style={{
-                      marginTop: 16,
-                    }}
-                  >
-                    <NumInput
-                      label="Gross annual salary"
-                      value={grossSalary}
-                      onChange={setGrossSalary}
-                    />
+                  <Slider
+                    label="State income tax rate"
+                    value={stateRate}
+                    min={0}
+                    max={13}
+                    step={0.5}
+                    onChange={setStateRate}
+                    display={stateRate + "%"}
+                  />
 
-                    <NumInput
-                      label="Current age"
-                      value={age}
-                      onChange={setAge}
-                      prefix=""
-                    />
+                  <Slider
+                    label="401k contribution (% of gross)"
+                    value={k401Pct}
+                    min={0}
+                    max={50}
+                    step={0.5}
+                    onChange={setK401Pct}
+                    display={k401Pct + "%"}
+                  />
 
-                    <Slider
-                      label="Annual merit / salary increase"
-                      value={salaryGrowth}
-                      min={0}
-                      max={10}
-                      step={0.5}
-                      onChange={setSalaryGrowth}
-                      display={salaryGrowth + "%"}
-                    />
+                  <div className="stat-sub" style={{ marginTop: -8, marginBottom: 10 }}>
+                    = {fmt(calc.k401Annual)}
+                    /yr · {fmt(calc.k401Monthly)}
+                    /mo · Limit: {fmt(K401_LIMIT)}
+                  </div>
 
-                    <InfoBox>
-                      Take-home increases by {salaryGrowth}%/yr in projections —
-                      same rate as gross salary growth.
-                    </InfoBox>
+                  <Progress value={calc.k401Annual} max={K401_LIMIT} />
 
-                    <Slider
-                      label="State income tax rate"
-                      value={stateRate}
-                      min={0}
-                      max={13}
-                      step={0.5}
-                      onChange={setStateRate}
-                      display={stateRate + "%"}
-                    />
+                  <div style={{ marginTop: 16 }}>
+                    <Label>Employer match</Label>
 
-                    <Slider
-                      label="401k contribution (% of gross)"
-                      value={k401Pct}
-                      min={0}
-                      max={50}
-                      step={0.5}
-                      onChange={setK401Pct}
-                      display={k401Pct + "%"}
-                    />
+                    <div className="two-col gap-10">
+                      <NumInput
+                        label="Match %"
+                        value={employerMatch}
+                        onChange={setEmployerMatch}
+                        prefix="%"
+                      />
 
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--muted)",
-                        marginTop: -8,
-                        marginBottom: 10,
-                      }}
-                    >
-                      = {fmt(calc.k401Annual)}
-                      /yr · {fmt(calc.k401Monthly)}
-                      /mo · Limit: {fmt(K401_LIMIT)}
+                      <NumInput
+                        label="Up to % of salary"
+                        value={employerMatchMax}
+                        onChange={setEmployerMatchMax}
+                        prefix="%"
+                      />
                     </div>
+                  </div>
 
-                    <Progress value={calc.k401Annual} max={K401_LIMIT} />
-
-                    <div
-                      style={{
-                        marginTop: 16,
-                      }}
+                  <div className="toggle-row">
+                    <button
+                      className={`toggle-btn${contributionGrowth ? " is-active" : ""}`}
+                      onClick={() => setContributionGrowth(!contributionGrowth)}
                     >
-                      <Label>Employer match</Label>
+                      {contributionGrowth
+                        ? "Contribution growth: ON"
+                        : "Contribution growth: OFF"}
+                    </button>
+                  </div>
 
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          gap: 10,
-                        }}
-                      >
-                        <NumInput
-                          label="Match %"
-                          value={employerMatch}
-                          onChange={setEmployerMatch}
-                          prefix="%"
-                        />
+                  <InfoBox variant="muted">
+                    When ON, Roth and brokerage contributions grow with your
+                    salary assumption. Roth remains capped at the annual IRA
+                    limit.
+                  </InfoBox>
+                </div>
+              </Card>
+            </div>
+          </>
+        )}
 
-                        <NumInput
-                          label="Up to % of salary"
-                          value={employerMatchMax}
-                          onChange={setEmployerMatchMax}
-                          prefix="%"
+        {/* EXPENSES */}
+        {tab === "expenses" && (
+          <>
+            <Summary calc={calc} />
+            <div className="two-col">
+              <Card title="Monthly Expenses" badge={`${expenses.length} items`}>
+                <div className="expense-header">
+                  <span>Name</span>
+                  <span>Category</span>
+                  <span>Amount/mo</span>
+                  <span />
+                </div>
+
+                {expenses.map((item) => (
+                  <ExpenseRow
+                    key={item.id}
+                    item={item}
+                    onChange={(u) =>
+                      setExpenses(
+                        expenses.map((e) => (e.id === item.id ? u : e)),
+                      )
+                    }
+                    onRemove={() =>
+                      setExpenses(expenses.filter((e) => e.id !== item.id))
+                    }
+                  />
+                ))}
+
+                <button
+                  className="expense-add-btn"
+                  onClick={() =>
+                    setExpenses([
+                      ...expenses,
+                      {
+                        id: nextId(),
+                        name: "",
+                        category: "Other",
+                        amount: 0,
+                      },
+                    ])
+                  }
+                >
+                  + Add expense
+                </button>
+              </Card>
+
+              <div>
+                <Card title="Expense Summary">
+                  {CATEGORIES.filter((cat) =>
+                    expenses.some((e) => e.category === cat),
+                  ).map((cat) => {
+                    const total = expenses
+                      .filter((e) => e.category === cat)
+                      .reduce((s, e) => s + e.amount, 0);
+
+                    const ratio = total / (calc.netMonthly || 1);
+                    const ratioClass =
+                      ratio > 0.35
+                        ? "status-low"
+                        : ratio > 0.2
+                          ? "status-watch"
+                          : "status-healthy";
+                    const barStatusClass =
+                      ratio > 0.35
+                        ? "status-low"
+                        : ratio > 0.2
+                          ? "status-watch"
+                          : null;
+
+                    return (
+                      <div key={cat} className="expense-category-item">
+                        <div className="expense-category-row">
+                          <span>{cat}</span>
+
+                          <span className={`expense-category-amount ${ratioClass}`}>
+                            {fmt(total)}{" "}
+                            <span className="expense-category-pct">
+                              ({pct(ratio)})
+                            </span>
+                          </span>
+                        </div>
+
+                        <Progress
+                          value={total}
+                          max={calc.netMonthly}
+                          statusClassName={barStatusClass}
                         />
                       </div>
-                    </div>
+                    );
+                  })}
 
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        marginTop: 4,
-                      }}
-                    >
-                      <button
-                        style={toggleStyle(contributionGrowth)}
-                        onClick={() => setContributionGrowth(!contributionGrowth)}
-                      >
-                        {contributionGrowth
-                          ? "Contribution growth: ON"
-                          : "Contribution growth: OFF"}
-                      </button>
-                    </div>
-
-                    <InfoBox color="var(--muted)" bg="rgba(123,127,148,0.08)">
-                      When ON, Roth and brokerage contributions grow with your
-                      salary assumption. Roth remains capped at the annual IRA
-                      limit.
-                    </InfoBox>
-                  </div>
-                </Card>
-              </div>
-            </>
-          )}
-
-          {/* EXPENSES */}
-          {tab === "expenses" && (
-            <>
-              <Summary calc={calc} />
-              <div
-                className="two-col"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 18,
-                }}
-              >
-                <Card title="Monthly Expenses" badge={`${expenses.length} items`}>
-                  <div
-                    className="expense-header"
-                    style={{
-                      fontSize: 12,
-                      color: "var(--muted)",
-                      marginBottom: 12,
-                      display: "grid",
-                      gridTemplateColumns: "1fr 130px 110px 32px",
-                      gap: 8,
-                    }}
-                  >
-                    <span>Name</span>
-                    <span>Category</span>
-                    <span>Amount/mo</span>
-                    <span />
-                  </div>
-
-                  {expenses.map((item) => (
-                    <div className="expense-row" key={item.id}>
-                      <ExpenseRow
-                        item={item}
-                        onChange={(u) =>
-                          setExpenses(
-                            expenses.map((e) => (e.id === item.id ? u : e)),
-                          )
-                        }
-                        onRemove={() =>
-                          setExpenses(expenses.filter((e) => e.id !== item.id))
-                        }
-                      />
-                    </div>
-                  ))}
-
-                  <button
-                    onClick={() =>
-                      setExpenses([
-                        ...expenses,
-                        {
-                          id: nextId(),
-                          name: "",
-                          category: "Other",
-                          amount: 0,
-                        },
-                      ])
-                    }
-                    style={{
-                      marginTop: 10,
-                      padding: "8px 16px",
-                      borderRadius: 8,
-                      border: "1px dashed var(--border)",
-                      background: "none",
-                      color: "var(--accent)",
-                      cursor: "pointer",
-                      fontSize: 13,
-                      width: "100%",
-                    }}
-                  >
-                    + Add expense
-                  </button>
-                </Card>
-
-                <div>
-                  <Card title="Expense Summary">
-                    {CATEGORIES.filter((cat) =>
-                      expenses.some((e) => e.category === cat),
-                    ).map((cat) => {
-                      const total = expenses
-                        .filter((e) => e.category === cat)
-                        .reduce((s, e) => s + e.amount, 0);
-
-                      const ratio = total / (calc.netMonthly || 1);
-
-                      return (
-                        <div
-                          key={cat}
-                          style={{
-                            marginBottom: 10,
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              fontSize: 13,
-                              marginBottom: 2,
-                            }}
-                          >
-                            <span>{cat}</span>
-
-                            <span
-                              style={{
-                                color:
-                                  ratio > 0.35
-                                    ? "var(--red)"
-                                    : ratio > 0.2
-                                      ? "var(--yellow)"
-                                      : "var(--green)",
-                                fontWeight: 600,
-                              }}
-                            >
-                              {fmt(total)}{" "}
-                              <span
-                                style={{
-                                  fontWeight: 400,
-                                  color: "var(--muted)",
-                                }}
-                              >
-                                ({pct(ratio)})
-                              </span>
-                            </span>
-                          </div>
-
-                          <Progress
-                            value={total}
-                            max={calc.netMonthly}
-                            color={
-                              ratio > 0.35
-                                ? "var(--red)"
-                                : ratio > 0.2
-                                  ? "var(--yellow)"
-                                  : "var(--accent)"
-                            }
-                          />
-                        </div>
-                      );
-                    })}
-
-                    <div
-                      style={{
-                        marginTop: 12,
-                      }}
-                    >
-                      <Row
-                        label="Total expenses / mo"
-                        value={fmt(calc.totalExpenses)}
-                        highlight
-                      />
-
-                      <Row label="Take-home / mo" value={fmt(calc.netMonthly)} />
-
-                      <Row
-                        label="Remaining after expenses"
-                        value={fmt(calc.afterExpenses)}
-                        highlight
-                        valueColor={
-                          calc.afterExpenses >= 0 ? "var(--green)" : "var(--red)"
-                        }
-                      />
-
-                      <Row
-                        label="Housing / take-home"
-                        value={pct(calc.housingTakeHomeRatio)}
-                        valueColor={statusColor(
-                          getHealthStatus(
-                            calc.housingTakeHomeRatio,
-                            {
-                              good: 0.3,
-                              watch: 0.35,
-                            },
-                            true,
-                          ),
-                        )}
-                      />
-
-                      <Row
-                        label="Housing / gross"
-                        value={pct(calc.housingGrossRatio)}
-                      />
-                    </div>
-
-                    <InfoBox
-                      color={
-                        calc.afterExpenses < 0 ? "var(--red)" : "var(--accent)"
-                      }
-                      bg={
-                        calc.afterExpenses < 0
-                          ? "rgba(248,113,113,0.1)"
-                          : "var(--accent-dim)"
-                      }
-                    >
-                      {calc.afterExpenses < 0
-                        ? "Expenses exceed take-home. Reduce spending or increase income."
-                        : `You have ${fmt(
-                            calc.afterExpenses,
-                          )}/mo available after expenses.`}
-                    </InfoBox>
-                  </Card>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* INVESTMENTS */}
-          {tab === "invest" && (
-            <>
-              <Summary calc={calc} />
-              <div
-                className="two-col"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 18,
-                }}
-              >
-                <div>
-                  <Card title="Roth IRA" badge="Post-tax" accent>
-                    <NumInput
-                      label="Monthly contribution"
-                      value={rothContrib}
-                      onChange={setRothContrib}
-                    />
-
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--muted)",
-                        marginBottom: 6,
-                      }}
-                    >
-                      Annual: {fmt(calc.rothAnnual)} · Limit: {fmt(ROTH_LIMIT)} ·{" "}
-                      {pct(calc.rothAnnual / ROTH_LIMIT)} used
-                    </div>
-
-                    <Progress value={calc.rothAnnual} max={ROTH_LIMIT} />
-
-                    <div
-                      style={{
-                        marginTop: 14,
-                      }}
-                    >
-                      <NumInput
-                        label="Current Roth IRA balance"
-                        value={rothBalance}
-                        onChange={setRothBalance}
-                      />
-
-                      <Slider
-                        label="Expected annual return"
-                        value={rothRate}
-                        min={3}
-                        max={12}
-                        step={0.5}
-                        onChange={setRothRate}
-                        display={rothRate + "%"}
-                      />
-                    </div>
-
-                    <InfoBox>
-                      Tax-free growth assuming Roth rules are satisfied.
-                    </InfoBox>
-                  </Card>
-
-                  <Card title="Taxable Brokerage">
-                    <NumInput
-                      label="Monthly contribution"
-                      value={brokerageContrib}
-                      onChange={setBrokerageContrib}
-                    />
-
-                    <NumInput
-                      label="Current balance"
-                      value={brokerageBalance}
-                      onChange={setBrokerageBalance}
-                    />
-
-                    <Slider
-                      label="Expected annual return"
-                      value={brokerageRate}
-                      min={3}
-                      max={12}
-                      step={0.5}
-                      onChange={setBrokerageRate}
-                      display={brokerageRate + "%"}
-                    />
-
-                    <InfoBox color="var(--green)" bg="rgba(74,222,128,0.06)">
-                      No contribution limit. Capital gains/dividend taxes are not
-                      modeled in the projection.
-                    </InfoBox>
-                  </Card>
-                </div>
-
-                <div>
-                  <Card title="401k" badge="Pre-tax">
+                  <div style={{ marginTop: 12 }}>
                     <Row
-                      label={`Your contribution (${k401Pct}%)`}
-                      value={`${fmt(calc.k401Annual)}/yr`}
-                    />
-
-                    <Row
-                      label="Employer match"
-                      value={`${fmt(calc.employerMatchAmt)}/yr`}
-                    />
-
-                    <Row
-                      label="Total to 401k / yr"
-                      value={fmt(calc.k401Annual + calc.employerMatchAmt)}
+                      label="Total expenses / mo"
+                      value={fmt(calc.totalExpenses)}
                       highlight
                     />
 
-                    <NumInput
-                      label="Current 401k balance"
-                      value={k401Balance}
-                      onChange={setK401Balance}
+                    <Row label="Take-home / mo" value={fmt(calc.netMonthly)} />
+
+                    <Row
+                      label="Remaining after expenses"
+                      value={fmt(calc.afterExpenses)}
+                      highlight
+                      valueColor={boolStatusClass(calc.afterExpenses >= 0)}
                     />
 
-                    <Slider
-                      label="Expected annual return"
-                      value={k401Rate}
-                      min={3}
-                      max={12}
-                      step={0.5}
-                      onChange={setK401Rate}
-                      display={k401Rate + "%"}
+                    <Row
+                      label="Housing / take-home"
+                      value={pct(calc.housingTakeHomeRatio)}
+                      valueColor={statusClass(
+                        getHealthStatus(
+                          calc.housingTakeHomeRatio,
+                          {
+                            good: 0.3,
+                            watch: 0.35,
+                          },
+                          true,
+                        ),
+                      )}
                     />
 
-                    <InfoBox>
-                      Tax-deferred growth. Retirement withdrawals are not modeled
-                      for taxes here.
-                    </InfoBox>
-                  </Card>
-
-                  <Card title="Monthly Cash Flow Waterfall">
-                    {[
-                      {
-                        label: "Take-home",
-                        value: calc.netMonthly,
-                        color: "var(--text)",
-                      },
-                      {
-                        label: "– Expenses",
-                        value: calc.totalExpenses,
-                        color: "var(--red)",
-                      },
-                      {
-                        label: "– Roth IRA",
-                        value: calc.rothMonthly,
-                        color: "var(--accent)",
-                      },
-                      {
-                        label: "– Brokerage",
-                        value: brokerageContrib,
-                        color: "var(--accent)",
-                      },
-                      {
-                        label: "= Cash surplus/mo",
-                        value: calc.leftoverMonthly,
-                        color:
-                          calc.leftoverMonthly >= 0
-                            ? "var(--green)"
-                            : "var(--red)",
-                      },
-                    ].map((r) => (
-                      <Row
-                        key={r.label}
-                        label={r.label}
-                        value={
-                          <span
-                            style={{
-                              color: r.color,
-                            }}
-                          >
-                            {fmt(r.value)}
-                          </span>
-                        }
-                      />
-                    ))}
-
-                    <InfoBox color="var(--muted)" bg="rgba(123,127,148,0.08)">
-                      401k contributions are treated as already reflected in
-                      take-home.
-                    </InfoBox>
-                  </Card>
-
-                  <Card title="Cash Reserve">
-                    <NumInput
-                      label="Starting cash reserve"
-                      value={initCash}
-                      onChange={setInitCash}
+                    <Row
+                      label="Housing / gross"
+                      value={pct(calc.housingGrossRatio)}
                     />
+                  </div>
 
-                    <Slider
-                      label="Cash / HYSA annual return"
-                      value={cashRate}
-                      min={0}
-                      max={8}
-                      step={0.25}
-                      onChange={setCashRate}
-                      display={cashRate + "%"}
-                    />
-
-                    <InfoBox>
-                      Cash earns the assumed APY in the projection instead of
-                      simply sitting at 0%.
-                    </InfoBox>
-                  </Card>
-
-                  <Card title="Projection Settings">
-                    <Slider
-                      label="Years to project"
-                      value={projYears}
-                      min={1}
-                      max={40}
-                      step={1}
-                      onChange={setProjYears}
-                      display={projYears + " yrs"}
-                    />
-
-                    <InfoBox color="var(--muted)" bg="rgba(123,127,148,0.08)">
-                      Current age: {age}. Projected age: {finalAge}.
-                    </InfoBox>
-                  </Card>
-                </div>
+                  <InfoBox variant={calc.afterExpenses < 0 ? "red" : "accent"}>
+                    {calc.afterExpenses < 0
+                      ? "Expenses exceed take-home. Reduce spending or increase income."
+                      : `You have ${fmt(
+                          calc.afterExpenses,
+                        )}/mo available after expenses.`}
+                  </InfoBox>
+                </Card>
               </div>
-            </>
-          )}
+            </div>
+          </>
+        )}
 
-          {/* OUTLOOK */}
-          {tab === "outlook" && (
-            <>
-              <Summary calc={calc} />
-              <div>
-                <div
-                  className="five-col"
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(5, 1fr)",
-                    gap: 12,
-                    marginBottom: 18,
-                  }}
-                >
-                  {[
-                    {
-                      label: "Roth IRA",
-                      value: calc.proj.roth,
-                      sub: `${rothRate}%/yr`,
-                    },
-                    {
-                      label: "401k",
-                      value: calc.proj.k401,
-                      sub: "incl. match",
-                    },
-                    {
-                      label: "Brokerage",
-                      value: calc.proj.brokerage,
-                      sub: `${brokerageRate}%/yr`,
-                    },
-                    {
-                      label: "Cash Reserve",
-                      value: calc.proj.cash,
-                      sub: `${cashRate}% APY`,
-                      green: true,
-                    },
-                    {
-                      label: "Total",
-                      value: calc.proj.total,
-                      sub: `age ${finalAge}`,
-                      accent: true,
-                    },
-                  ].map((s) => (
-                    <div
-                      key={s.label}
-                      style={{
-                        background: "var(--card)",
-                        border: `1px solid ${
-                          s.accent ? "var(--accent)" : "var(--border)"
-                        }`,
-                        borderRadius: 10,
-                        padding: 16,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: "var(--muted)",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                          marginBottom: 4,
-                        }}
-                      >
-                        {s.label}
-                      </div>
+        {/* INVESTMENTS */}
+        {tab === "invest" && (
+          <>
+            <Summary calc={calc} />
+            {/* Three account cards in a compact 3-col row */}
+            <div className="invest-account-grid">
+              <Card title="Roth IRA" badge="Post-tax" accent>
+                <NumInput
+                  label="Monthly contribution"
+                  value={rothContrib}
+                  onChange={setRothContrib}
+                />
 
-                      <div
-                        style={{
-                          fontSize: 20,
-                          fontWeight: 800,
-                          color: s.accent
-                            ? "var(--accent)"
-                            : s.green
-                              ? "var(--green)"
-                              : "var(--text)",
-                        }}
-                      >
-                        {fmt(s.value)}
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: "var(--muted)",
-                          marginTop: 2,
-                        }}
-                      >
-                        {s.sub}
-                      </div>
-                    </div>
-                  ))}
+                <div className="stat-sub" style={{ marginBottom: 6 }}>
+                  Annual: {fmt(calc.rothAnnual)} · Limit: {fmt(ROTH_LIMIT)} ·{" "}
+                  {pct(calc.rothAnnual / ROTH_LIMIT)} used
                 </div>
 
-                {/* NET WORTH BENCHMARK */}
-                <Card title="Net Worth vs. Age Benchmark" accent>
+                <Progress value={calc.rothAnnual} max={ROTH_LIMIT} />
+
+                <div style={{ marginTop: 14 }}>
+                  <NumInput
+                    label="Current balance"
+                    value={rothBalance}
+                    onChange={setRothBalance}
+                  />
+
+                  <Slider
+                    label="Annual return"
+                    value={rothRate}
+                    min={3}
+                    max={12}
+                    step={0.5}
+                    onChange={setRothRate}
+                    display={rothRate + "%"}
+                  />
+                </div>
+
+                <InfoBox>Tax-free growth assuming Roth rules are satisfied.</InfoBox>
+              </Card>
+
+              <Card title="401k" badge="Pre-tax">
+                <Row
+                  label={`Your contribution (${k401Pct}%)`}
+                  value={`${fmt(calc.k401Annual)}/yr`}
+                />
+
+                <Row
+                  label="Employer match"
+                  value={`${fmt(calc.employerMatchAmt)}/yr`}
+                />
+
+                <Row
+                  label="Total to 401k / yr"
+                  value={fmt(calc.k401Annual + calc.employerMatchAmt)}
+                  highlight
+                />
+
+                <NumInput
+                  label="Current balance"
+                  value={k401Balance}
+                  onChange={setK401Balance}
+                />
+
+                <Slider
+                  label="Annual return"
+                  value={k401Rate}
+                  min={3}
+                  max={12}
+                  step={0.5}
+                  onChange={setK401Rate}
+                  display={k401Rate + "%"}
+                />
+
+                <InfoBox>
+                  Tax-deferred growth. Withdrawals not modeled for taxes.
+                </InfoBox>
+              </Card>
+
+              <Card title="Taxable Brokerage">
+                <NumInput
+                  label="Monthly contribution"
+                  value={brokerageContrib}
+                  onChange={setBrokerageContrib}
+                />
+
+                <NumInput
+                  label="Current balance"
+                  value={brokerageBalance}
+                  onChange={setBrokerageBalance}
+                />
+
+                <Slider
+                  label="Annual return"
+                  value={brokerageRate}
+                  min={3}
+                  max={12}
+                  step={0.5}
+                  onChange={setBrokerageRate}
+                  display={brokerageRate + "%"}
+                />
+
+                <InfoBox variant="green">
+                  No contribution limit. Capital gains taxes are not modeled.
+                </InfoBox>
+              </Card>
+            </div>
+
+            {/* Cash flow waterfall + cash reserve side by side */}
+            <div className="two-col">
+              <Card title="Monthly Cash Flow Waterfall">
+                {[
+                  {
+                    label: "Take-home",
+                    value: calc.netMonthly,
+                    className: "u-text-default",
+                  },
+                  {
+                    label: "– Expenses",
+                    value: calc.totalExpenses,
+                    className: "u-text-red",
+                  },
+                  {
+                    label: "– Roth IRA",
+                    value: calc.rothMonthly,
+                    className: "u-text-accent",
+                  },
+                  {
+                    label: "– Brokerage",
+                    value: brokerageContrib,
+                    className: "u-text-accent",
+                  },
+                  {
+                    label: "= Cash surplus/mo",
+                    value: calc.leftoverMonthly,
+                    className:
+                      calc.leftoverMonthly >= 0
+                        ? "u-text-green"
+                        : "u-text-red",
+                  },
+                ].map((r) => (
+                  <Row
+                    key={r.label}
+                    label={r.label}
+                    value={<span className={r.className}>{fmt(r.value)}</span>}
+                  />
+                ))}
+
+                <InfoBox variant="muted">
+                  401k contributions are already reflected in take-home.
+                </InfoBox>
+              </Card>
+
+              <Card title="Cash Reserve">
+                <NumInput
+                  label="Starting cash reserve"
+                  value={initCash}
+                  onChange={setInitCash}
+                />
+
+                <Slider
+                  label="Cash / HYSA annual return"
+                  value={cashRate}
+                  min={0}
+                  max={8}
+                  step={0.25}
+                  onChange={setCashRate}
+                  display={cashRate + "%"}
+                />
+
+                <InfoBox>
+                  Cash earns the assumed APY in the projection instead of
+                  simply sitting at 0%.
+                </InfoBox>
+              </Card>
+            </div>
+          </>
+        )}
+
+        {/* OUTLOOK */}
+        {tab === "outlook" && (
+          <>
+            <Summary calc={calc} />
+            <div>
+              <div className="five-col mb-18">
+                {[
+                  {
+                    label: "Roth IRA",
+                    value: calc.proj.roth,
+                    sub: `${rothRate}%/yr`,
+                    className: "u-text-default",
+                    cardAccent: false,
+                  },
+                  {
+                    label: "401k",
+                    value: calc.proj.k401,
+                    sub: "incl. match",
+                    className: "u-text-default",
+                    cardAccent: false,
+                  },
+                  {
+                    label: "Brokerage",
+                    value: calc.proj.brokerage,
+                    sub: `${brokerageRate}%/yr`,
+                    className: "u-text-default",
+                    cardAccent: false,
+                  },
+                  {
+                    label: "Cash Reserve",
+                    value: calc.proj.cash,
+                    sub: `${cashRate}% APY`,
+                    className: "u-text-green",
+                    cardAccent: false,
+                  },
+                  {
+                    label: "Total",
+                    value: calc.proj.total,
+                    sub: `age ${finalAge}`,
+                    className: "u-text-accent",
+                    cardAccent: true,
+                  },
+                ].map((s) => (
                   <div
-                    className="two-col"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 24,
-                    }}
+                    key={s.label}
+                    className={`stat-card is-lg${s.cardAccent ? " is-accent" : ""}`}
                   >
-                    <div>
-                      <Label>Current position</Label>
+                    <div className="stat-label">{s.label}</div>
 
-                      <div
-                        style={{
-                          fontSize: 30,
-                          fontWeight: 800,
-                          margin: "6px 0",
-                        }}
-                      >
-                        {fmt(currentNetWorth)}
-                      </div>
+                    <div className={`stat-value is-lg ${s.className}`}>
+                      {fmt(s.value)}
+                    </div>
 
+                    <div className="stat-sub">{s.sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* NET WORTH BENCHMARK + MILESTONES side by side */}
+              <div className="two-col">
+                <Card title="Net Worth vs. Age Benchmark" accent>
+                  {/* Current vs Projected in a compact 2-col header */}
+                  <div className="benchmark-header-row">
+                    <div className="benchmark-col">
+                      <div className="benchmark-col-label">Now · Age {age}</div>
+                      <div className="benchmark-col-value">{fmt(currentNetWorth)}</div>
                       <div
-                        style={{
-                          color: statusColor(
-                            currentNetWorthStatus === "90th+"
-                              ? "healthy"
-                              : currentNetWorthStatus === "75th–90th"
-                                ? "healthy"
-                                : currentNetWorthStatus === "50th–75th"
-                                  ? "watch"
-                                  : "low",
-                          ),
-                          fontWeight: 700,
-                          fontSize: 13,
-                        }}
+                        className={statusClass(netWorthStatusBucket(currentNetWorthStatus))}
+                        style={{ color: "var(--status-color)", fontWeight: 700, fontSize: 12 }}
                       >
                         {currentNetWorthStatus}
                       </div>
-
-                      <div
-                        style={{
-                          marginTop: 14,
-                        }}
-                      >
-                        <Row
-                          label="25th percentile"
-                          value={fmt(currentBenchmark.p25)}
-                        />
-                        <Row
-                          label="50th percentile"
-                          value={fmt(currentBenchmark.p50)}
-                        />
-                        <Row
-                          label="75th percentile"
-                          value={fmt(currentBenchmark.p75)}
-                        />
-                        <Row
-                          label="90th percentile"
-                          value={fmt(currentBenchmark.p90)}
-                        />
-                      </div>
                     </div>
-
-                    <div>
-                      <Label>Projected position</Label>
-
+                    <div className="benchmark-col">
+                      <div className="benchmark-col-label">Projected · Age {finalAge}</div>
+                      <div className="benchmark-col-value u-text-accent">{fmt(calc.proj.total)}</div>
                       <div
-                        style={{
-                          fontSize: 30,
-                          fontWeight: 800,
-                          margin: "6px 0",
-                          color: "var(--accent)",
-                        }}
+                        className={statusClass(netWorthStatusBucket(finalStatus))}
+                        style={{ color: "var(--status-color)", fontWeight: 700, fontSize: 12 }}
                       >
-                        {fmt(calc.proj.total)}
-                      </div>
-
-                      <div
-                        style={{
-                          color:
-                            finalStatus === "90th+" || finalStatus === "75th–90th"
-                              ? "var(--green)"
-                              : finalStatus === "50th–75th"
-                                ? "var(--yellow)"
-                                : "var(--red)",
-                          fontWeight: 700,
-                          fontSize: 13,
-                        }}
-                      >
-                        {finalStatus} at age {finalAge}
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: 14,
-                        }}
-                      >
-                        <Row
-                          label="25th percentile"
-                          value={fmt(finalBenchmark.p25)}
-                        />
-                        <Row
-                          label="50th percentile"
-                          value={fmt(finalBenchmark.p50)}
-                        />
-                        <Row
-                          label="75th percentile"
-                          value={fmt(finalBenchmark.p75)}
-                        />
-                        <Row
-                          label="90th percentile"
-                          value={fmt(finalBenchmark.p90)}
-                        />
+                        {finalStatus}
                       </div>
                     </div>
                   </div>
 
-                  <InfoBox color="var(--muted)" bg="rgba(123,127,148,0.08)">
-                    Benchmark figures are approximate U.S. household net-worth
-                    reference points, not a precise individual ranking. They
-                    should be treated as directional context.
+                  {/* Compact percentile table */}
+                  <div className="benchmark-pct-table">
+                    <div className="benchmark-pct-head">
+                      <span>Percentile</span>
+                      <span>Age {age}</span>
+                      <span>Age {finalAge}</span>
+                    </div>
+                    {[
+                      { label: "25th", curr: currentBenchmark.p25, proj: finalBenchmark.p25 },
+                      { label: "50th", curr: currentBenchmark.p50, proj: finalBenchmark.p50 },
+                      { label: "75th", curr: currentBenchmark.p75, proj: finalBenchmark.p75 },
+                      { label: "90th", curr: currentBenchmark.p90, proj: finalBenchmark.p90 },
+                    ].map((row) => (
+                      <div key={row.label} className="benchmark-pct-row">
+                        <span className="u-text-muted">{row.label}</span>
+                        <span>{fmt(row.curr)}</span>
+                        <span>{fmt(row.proj)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <InfoBox variant="muted">
+                    Approximate U.S. household net-worth reference points — directional context only.
                   </InfoBox>
                 </Card>
 
                 {/* MILESTONES */}
                 <Card title="Financial Milestones">
-                  <div
-                    className="five-col"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(4, 1fr)",
-                      gap: 10,
-                    }}
-                  >
+                  <div className="milestone-stack">
                     {milestones.map((m) => (
                       <div
                         key={m.target}
-                        style={{
-                          padding: 14,
-                          background: m.reached
-                            ? "rgba(74,222,128,0.07)"
-                            : m.hit
-                              ? "var(--accent-dim)"
-                              : "var(--input-bg)",
-                          border: m.reached
-                            ? "1px solid var(--green)"
-                            : m.hit
-                              ? "1px solid var(--accent)"
-                              : "1px solid var(--border)",
-                          borderRadius: 9,
-                        }}
+                        className={`milestone-row-item${m.reached || m.hit ? " is-reached" : ""}`}
                       >
-                        <div
-                          style={{
-                            fontSize: 11,
-                            color: "var(--muted)",
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          Net worth
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: 19,
-                            fontWeight: 800,
-                            marginTop: 4,
-                          }}
-                        >
-                          {fmt(m.target)}
-                        </div>
-
-                        <div
-                          style={{
-                            marginTop: 7,
-                            fontSize: 12,
-                            color: m.reached
-                              ? "var(--green)"
-                              : m.hit
-                                ? "var(--accent)"
-                                : "var(--muted)",
-                            fontWeight: 700,
-                          }}
-                        >
+                        <div className="milestone-row-value">{fmt(m.target)}</div>
+                        <div className={`milestone-row-status${m.reached || m.hit ? " is-reached" : ""}`}>
                           {m.reached
                             ? "✓ Already reached"
                             : m.hit
-                              ? `Projected year ${m.hit.year}`
+                              ? `✓ Yr ${m.hit.year} · Age ${age + m.hit.year}`
                               : "Beyond projection"}
                         </div>
-
-                        {m.hit && !m.reached && (
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: "var(--muted)",
-                              marginTop: 3,
-                            }}
-                          >
-                            Age {age + m.hit.year}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
                 </Card>
-
-                {/* YEAR BY YEAR */}
-                <CollapsibleYearTable
-                  snapshots={calc.proj.snapshots}
-                  projYears={projYears}
-                  age={age}
-                  finalAge={finalAge}
-                  salaryGrowth={salaryGrowth}
-                  cashRate={cashRate}
-                />
-
-                <div
-                  className="two-col"
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 16,
-                  }}
-                >
-                  <Card title="Annual Contributions">
-                    <Row label="Roth IRA / yr" value={fmt(calc.rothAnnual)} />
-
-                    <Row
-                      label={`401k your contribution (${k401Pct}%)`}
-                      value={fmt(calc.k401Annual)}
-                    />
-
-                    <Row
-                      label="401k employer match"
-                      value={fmt(calc.employerMatchAmt)}
-                    />
-
-                    <Row
-                      label="Taxable brokerage / yr"
-                      value={fmt(calc.brokerageAnnual)}
-                    />
-
-                    <Row
-                      label="Total invested / yr"
-                      value={fmt(
-                        calc.rothAnnual +
-                          calc.k401Annual +
-                          calc.employerMatchAmt +
-                          calc.brokerageAnnual,
-                      )}
-                      highlight
-                    />
-
-                    <Row
-                      label="Cash surplus / yr"
-                      value={fmt(calc.leftoverAnnual)}
-                      valueColor={
-                        calc.leftoverAnnual >= 0 ? "var(--green)" : "var(--red)"
-                      }
-                    />
-                  </Card>
-
-                  <Card title="What Should I Change?">
-                    {calc.housingTakeHomeRatio > 0.3 && (
-                      <InfoBox color="var(--yellow)" bg="rgba(251,191,36,0.08)">
-                        🏠 Housing is {pct(calc.housingTakeHomeRatio)} of
-                        take-home. Getting below 30% would create more
-                        flexibility.
-                      </InfoBox>
-                    )}
-
-                    {calc.investmentGrossRatio < 0.15 && (
-                      <InfoBox color="var(--yellow)" bg="rgba(251,191,36,0.08)">
-                        📈 Increasing investments toward 15% of gross would put
-                        you closer to the common long-term target.
-                      </InfoBox>
-                    )}
-
-                    {calc.expenseRatio > 0.5 && (
-                      <InfoBox color="var(--yellow)" bg="rgba(251,191,36,0.08)">
-                        💰 Expenses consume {pct(calc.expenseRatio)} of take-home.
-                        Cutting recurring expenses has a direct effect on your
-                        investable surplus.
-                      </InfoBox>
-                    )}
-
-                    {calc.emergencyFunding < 1 && (
-                      <InfoBox color="var(--accent)" bg="var(--accent-dim)">
-                        🛟 Six-month emergency target: {fmt(calc.emergencyTarget)}
-                        . Available (cash + surplus):{" "}
-                        {fmt(calc.emergencyAvailable)}.
-                      </InfoBox>
-                    )}
-
-                    {calc.healthScore >= 85 && (
-                      <InfoBox color="var(--green)" bg="rgba(74,222,128,0.08)">
-                        ✓ Your current plan is strong across the major ratios. The
-                        biggest lever now is continuing to grow income and
-                        investments.
-                      </InfoBox>
-                    )}
-                  </Card>
-                </div>
               </div>
-            </>
-          )}
-        </div>
+
+              {/* YEAR BY YEAR */}
+              <CollapsibleYearTable
+                snapshots={calc.proj.snapshots}
+                projYears={projYears}
+                age={age}
+                finalAge={finalAge}
+                salaryGrowth={salaryGrowth}
+                cashRate={cashRate}
+              />
+
+              <div className="two-col">
+                <Card title="Annual Contributions">
+                  <Row label="Roth IRA / yr" value={fmt(calc.rothAnnual)} />
+
+                  <Row
+                    label={`401k your contribution (${k401Pct}%)`}
+                    value={fmt(calc.k401Annual)}
+                  />
+
+                  <Row
+                    label="401k employer match"
+                    value={fmt(calc.employerMatchAmt)}
+                  />
+
+                  <Row
+                    label="Taxable brokerage / yr"
+                    value={fmt(calc.brokerageAnnual)}
+                  />
+
+                  <Row
+                    label="Total invested / yr"
+                    value={fmt(
+                      calc.rothAnnual +
+                        calc.k401Annual +
+                        calc.employerMatchAmt +
+                        calc.brokerageAnnual,
+                    )}
+                    highlight
+                  />
+
+                  <Row
+                    label="Cash surplus / yr"
+                    value={fmt(calc.leftoverAnnual)}
+                    valueColor={boolStatusClass(calc.leftoverAnnual >= 0)}
+                  />
+                </Card>
+
+                <Card title="What Should I Change?">
+                  {calc.housingTakeHomeRatio > 0.3 && (
+                    <InfoBox variant="yellow">
+                      🏠 Housing is {pct(calc.housingTakeHomeRatio)} of
+                      take-home. Getting below 30% would create more
+                      flexibility.
+                    </InfoBox>
+                  )}
+
+                  {calc.investmentGrossRatio < 0.15 && (
+                    <InfoBox variant="yellow">
+                      📈 Increasing investments toward 15% of gross would put
+                      you closer to the common long-term target.
+                    </InfoBox>
+                  )}
+
+                  {calc.expenseRatio > 0.5 && (
+                    <InfoBox variant="yellow">
+                      💰 Expenses consume {pct(calc.expenseRatio)} of take-home.
+                      Cutting recurring expenses has a direct effect on your
+                      investable surplus.
+                    </InfoBox>
+                  )}
+
+                  {calc.emergencyFunding < 1 && (
+                    <InfoBox>
+                      🛟 Six-month emergency target: {fmt(calc.emergencyTarget)}
+                      . Available (cash + surplus):{" "}
+                      {fmt(calc.emergencyAvailable)}.
+                    </InfoBox>
+                  )}
+
+                  {calc.healthScore >= 85 && (
+                    <InfoBox variant="green">
+                      ✓ Your current plan is strong across the major ratios. The
+                      biggest lever now is continuing to grow income and
+                      investments.
+                    </InfoBox>
+                  )}
+                </Card>
+              </div>
+            </div>
+          </>
+        )}
       </div>
-    </>
+    </div>
   );
 }

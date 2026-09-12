@@ -2,68 +2,60 @@
   "version": 1,
   "simulations": [
     {
-      "id": 1789089569691,
+      "id": 1789098369314,
       "name": "Simulation 1",
-      "tab": "compare",
-      "actualTakeHome": 8000,
-      "grossSalary": 135000,
-      "stateRate": 5,
-      "salaryGrowth": 3,
+      "tab": "income",
+      "actualTakeHome": 6000,
+      "grossSalary": 120000,
+      "stateRate": 4,
+      "salaryGrowth": 5,
       "contributionGrowth": true,
-      "age": 30,
+      "age": 29,
       "k401Pct": 7,
       "employerMatch": 50,
       "employerMatchMax": 6,
       "k401Balance": 0,
-      "k401Rate": 10,
+      "k401Rate": 7,
       "expenses": [
         {
-          "id": 1,
-          "name": "Rent / Mortgage",
-          "category": "Housing",
-          "amount": 1230
-        },
-        {
           "id": 2,
-          "name": "Groceries",
+          "name": "rent",
           "category": "Food",
-          "amount": 400
+          "amount": 1000
         },
         {
           "id": 3,
           "name": "Car + gas",
           "category": "Transport",
-          "amount": 550
+          "amount": 350
         },
         {
           "id": 4,
           "name": "Utilities",
           "category": "Utilities",
-          "amount": 150
+          "amount": 75
         },
         {
-          "id": 5,
-          "name": "Phone",
-          "category": "Subscriptions",
-          "amount": 80
+          "id": 1789148145778,
+          "name": "misc",
+          "category": "Other",
+          "amount": 800
         }
       ],
       "rothContrib": 625,
-      "rothBalance": 10000,
-      "rothRate": 10,
-      "brokerageContrib": 3300,
+      "rothBalance": 0,
+      "rothRate": 7,
+      "brokerageContrib": 1000,
       "brokerageBalance": 0,
-      "brokerageRate": 10,
-      "initCash": 100007,
-      "cashRate": 4,
-      "projYears": 30
+      "brokerageRate": 7,
+      "initCash": 100000,
+      "cashRate": 4
     },
     {
-      "id": 1789091593169,
-      "name": "Simulation 3",
+      "id": 1789148074452,
+      "name": "Simulation 2",
       "tab": "income",
-      "incomeMode": "prefill",
-      "actualTakeHome": 3000,
+      "actualTakeHome": 5200,
       "grossSalary": 85000,
       "stateRate": 5,
       "salaryGrowth": 3,
@@ -76,12 +68,6 @@
       "k401Rate": 7,
       "expenses": [
         {
-          "id": 1,
-          "name": "Rent / Mortgage",
-          "category": "Housing",
-          "amount": 1230
-        },
-        {
           "id": 2,
           "name": "Groceries",
           "category": "Food",
@@ -98,12 +84,6 @@
           "name": "Utilities",
           "category": "Utilities",
           "amount": 150
-        },
-        {
-          "id": 5,
-          "name": "Phone",
-          "category": "Subscriptions",
-          "amount": 80
         }
       ],
       "rothContrib": 500,
@@ -113,9 +93,9 @@
       "brokerageBalance": 0,
       "brokerageRate": 7,
       "initCash": 0,
-      "cashRate": 4,
-      "projYears": 20
+      "cashRate": 4
     }
   ],
-  "activeSimulationId": 1789089569691
+  "activeSimulationId": 1789098369314,
+  "projYears": 30
 }
