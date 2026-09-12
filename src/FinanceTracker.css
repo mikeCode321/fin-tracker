@@ -1,7 +1,8 @@
 /* ─── APP SHELL — sidebar + scrolling content ──────────────────────────── */
 .ft-shell {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;       /* exact viewport height — no overflow at shell level */
+  overflow: hidden;    /* sidebar stays put; only ft-main scrolls */
   background: var(--bg);
 }
 
@@ -9,10 +10,8 @@
 .ft-sidebar {
   width: 210px;
   flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
+  height: 100vh;       /* full viewport, never scrolls with content */
+  overflow-y: auto;    /* scrollable internally if nav overflows */
   background: var(--card);
   border-right: 1px solid var(--border);
   display: flex;
@@ -20,20 +19,29 @@
   z-index: 10;
 }
 
+/* ─── RIGHT COLUMN WRAPPER (desktop: passthrough; mobile: flex col) ────── */
+.ft-right-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
 /* ─── MOBILE TOP HEADER ────────────────────────────────────────────────── */
+/* In normal flow above ft-main — never position:fixed, so it can never
+   overlap scrolled content. */
 .ft-mobile-header {
   display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
+  flex-shrink: 0;
   height: 52px;
   background: var(--card);
   border-bottom: 1px solid var(--border);
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
+  z-index: 50;
 }
 
 .ft-mobile-header-brand {
@@ -122,7 +130,7 @@
   }
 
   .ft-mobile-header {
-    display: flex;
+    display: flex;  /* flex so align-items/justify-content work */
   }
 
   /* The hamburger lives inside the header on mobile, not standalone */
@@ -144,8 +152,9 @@
 
   .ft-main {
     padding: 16px;
-    padding-top: 68px; /* clears the 52px header */
+    padding-bottom: 60px;
     overflow-x: hidden;
+    overflow-y: auto;
   }
 
   /* Ensure health panel appears above sidebar drawer on mobile */
@@ -425,8 +434,16 @@
 .ft-main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px;
   padding-bottom: 60px;
+  scrollbar-width: none;        /* Firefox */
+}
+
+.ft-main::-webkit-scrollbar {
+  display: none;                /* Chrome, Safari, Edge */
 }
 
 /* ─── LEGACY (kept for compatibility) ──────────────────────────────────── */
@@ -944,62 +961,120 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle tinted background per semantic tone — no slivers, no borders,
+   just a faint wash that reads as distinct at a glance. */
+.stat-card.tone-green {
+  background: color-mix(in srgb, var(--green) 7%, var(--card));
+  border-color: color-mix(in srgb, var(--green) 18%, var(--border));
+}
+.stat-card.tone-red {
+  background: color-mix(in srgb, var(--red) 7%, var(--card));
+  border-color: color-mix(in srgb, var(--red) 18%, var(--border));
+}
+.stat-card.tone-accent {
+  background: color-mix(in srgb, var(--accent) 7%, var(--card));
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+}
+.stat-card.tone-yellow {
+  background: color-mix(in srgb, var(--yellow) 7%, var(--card));
+  border-color: color-mix(in srgb, var(--yellow) 18%, var(--border));
 }
 
 .stat-card.is-lg {
   padding: 16px;
 }
 
-/* Stat cards are intentionally neutral — no left-border color cues.
-   Color lives only in the value text (.u-text-*), not the card chrome. */
-
-/* ─── MOBILE STAT CARDS ────────────────────────────────────────────────── */
-.stat-card-compact {
-  padding: 10px 12px;
-}
-
-.stat-row-mobile {
-  display: none;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.stat-row-mobile .stat-card {
-  padding: 8px 10px;
-}
-
-.stat-expand-toggle {
-  width: 100%;
-  padding: 6px 12px;
-  background: var(--input-bg);
+/* ─── COMPACT SUMMARY BAR (replaces expand/show-more pattern) ──────────── */
+/* A slim single-line row of values — shown on ALL screen sizes above the
+   tab content. No toggle, no "show more", no separate mobile grid. */
+.summary-bar {
+  display: flex;
+  align-items: stretch;
+  background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 7px;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 8px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  overflow: hidden;
 }
 
-.stat-expand-toggle:hover {
-  background: var(--accent-dim);
+.summary-bar-item {
+  flex: 1;
+  padding: 10px 14px;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  position: relative;
 }
 
-.stat-grid-mobile {
-  display: none;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+.summary-bar-item:last-child {
+  border-right: none;
+}
+
+/* Faint tinted background per tone — same system as stat-card.tone-* */
+.summary-bar-item.tone-green {
+  background: color-mix(in srgb, var(--green) 6%, var(--card));
+}
+.summary-bar-item.tone-red {
+  background: color-mix(in srgb, var(--red) 6%, var(--card));
+}
+.summary-bar-item.tone-accent {
+  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+}
+.summary-bar-item.tone-yellow {
+  background: color-mix(in srgb, var(--yellow) 6%, var(--card));
+}
+
+.summary-bar-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.summary-bar-value {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @media (max-width: 768px) {
-  .five-col {
-    display: none;
+  .summary-bar {
+    flex-wrap: wrap;
+    border-radius: 10px;
   }
 
-  .stat-row-mobile,
-  .stat-grid-mobile {
-    display: grid;
+  .summary-bar-item {
+    flex: 1 1 33%;   /* 3 items per row on mobile */
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* last row items: remove bottom border */
+  /* .summary-bar-item:nth-last-child(-n+2) {
+    border-bottom: none;
+  } */
+
+  .summary-bar-value {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-bar-item {
+    flex: 1 1 50%;
+  }
+  .summary-bar-item:nth-last-child(-n+1) {
+    border-bottom: none;
   }
 }
 
@@ -1052,57 +1127,119 @@
   white-space: nowrap;
 }
 
-/* ─── OUTLOOK COMBINED STATS CARD (mobile) ─────────────────────────────── */
-.outlook-stats-combined {
-  display: none;
+/* ─── OUTLOOK SNAPSHOT CARD — combined current + projected ─────────────── */
+/* One card with two labeled sections separated by a divider.
+   Always visible on all breakpoints; replaces both the summary bar
+   and the five-col stat grid for the outlook tab. */
+.outlook-snapshot-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
+  overflow: hidden;
 }
 
-.outlook-stats-combined-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px 8px;
-}
-
-.outlook-stat-mini {
-  min-width: 0;
-}
-
-.outlook-stat-mini-label {
+.outlook-snapshot-section-label {
   font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--muted);
+  padding: 10px 16px 0;
+}
+
+.outlook-snapshot-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+}
+
+.outlook-snapshot-row:last-child {
+  border-bottom: none;
+}
+
+.outlook-snapshot-cell {
+  flex: 1;
+  padding: 10px 16px 12px;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+
+.outlook-snapshot-cell:last-child {
+  border-right: none;
+}
+
+/* Tinted backgrounds matching the tone system */
+.outlook-snapshot-cell.tone-green {
+  background: color-mix(in srgb, var(--green) 6%, var(--card));
+}
+.outlook-snapshot-cell.tone-red {
+  background: color-mix(in srgb, var(--red) 6%, var(--card));
+}
+.outlook-snapshot-cell.tone-accent {
+  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+}
+.outlook-snapshot-cell.tone-yellow {
+  background: color-mix(in srgb, var(--yellow) 6%, var(--card));
+}
+
+.outlook-snapshot-label {
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 2px;
+  color: var(--muted);
+  margin-bottom: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.outlook-stat-mini-value {
-  font-size: 14px;
+.outlook-snapshot-value {
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.outlook-stat-mini-sub {
+.outlook-snapshot-sub {
   font-size: 9px;
   color: var(--muted);
-  margin-top: 1px;
+  margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .outlook-snapshot-value {
+    font-size: 14px;
+  }
 }
 
 @media (max-width: 768px) {
-  /* Hide the desktop five-col outlook stat grid, show combined card instead */
-  .outlook-five-col {
-    display: none !important;
+  .outlook-snapshot-row {
+    flex-wrap: wrap;
   }
 
-  .outlook-stats-combined {
-    display: block;
+  .outlook-snapshot-cell {
+    flex: 1 1 33%;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Remove bottom border from last row */
+  /* .outlook-snapshot-cell:nth-last-child(-n+2) {
+    border-bottom: none;
+  } */
+
+  .outlook-snapshot-value {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .outlook-snapshot-cell {
+    flex: 1 1 50%;
   }
 }
 
@@ -1607,4 +1744,73 @@
   height: 3px;
   display: inline-block;
   border-radius: 2px;
+}
+
+/* ─── DELETE CONFIRMATION MODAL ─────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 28px 22px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.modal-body {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.modal-btn {
+  padding: 8px 22px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.modal-btn.is-cancel {
+  background: var(--input-bg);
+  color: var(--muted);
+}
+
+.modal-btn.is-cancel:hover {
+  color: var(--text);
+}
+
+.modal-btn.is-delete {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
+.modal-btn.is-delete:hover {
+  opacity: 0.88;
 }

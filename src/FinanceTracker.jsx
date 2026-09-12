@@ -740,104 +740,48 @@ function FloatingHealthPanel({
   );
 }
 
+// Compact summary bar — all 5 values in a single segmented row.
+// No expand/toggle; scales gracefully to mobile via CSS wrapping.
 function Summary({ calc }) {
-  const [isMobile, setIsMobile] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    // Must match the CSS breakpoint (`max-width: 768px`) exactly — using
-    // "< 768" here left a 1px gap where the CSS hid `.five-col` but this
-    // still rendered the desktop branch, making all stat cards disappear
-    // at exactly 768px wide.
-    const check = () => setIsMobile(window.innerWidth <= 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
-
   const stats = [
     {
       label: "Take-home / mo",
       value: fmt(calc.netMonthly),
       className: "u-text-green",
       tone: "green",
-      key: true,
     },
     {
       label: "Monthly expenses",
       value: fmt(calc.totalExpenses),
       className: "u-text-red",
       tone: "red",
-      key: true,
     },
     {
       label: "After expenses",
       value: fmt(calc.afterExpenses),
       className: calc.afterExpenses >= 0 ? "u-text-green" : "u-text-red",
       tone: calc.afterExpenses >= 0 ? "green" : "red",
-      key: true,
     },
     {
       label: "Investing / mo",
       value: fmt(calc.totalInvesting),
       className: "u-text-accent",
       tone: "accent",
-      key: false,
     },
     {
       label: "Cash surplus / mo",
       value: fmt(calc.leftoverMonthly),
       className: calc.leftoverMonthly >= 0 ? "u-text-green" : "u-text-red",
       tone: calc.leftoverMonthly >= 0 ? "green" : "red",
-      key: false,
     },
   ];
 
-  const keyStats = stats.filter((s) => s.key);
-  const otherStats = stats.filter((s) => !s.key);
-
-  if (isMobile) {
-    return (
-      <div className="mb-24">
-        {/* Key stats row */}
-        <div className="stat-row-mobile">
-          {keyStats.map((s) => (
-            <div key={s.label} className={`stat-card stat-card-compact tone-${s.tone}`}>
-              <div className="stat-label">{s.label}</div>
-              <div className={`stat-value ${s.className}`}>{s.value}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Expand toggle */}
-        <button
-          className="stat-expand-toggle"
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? "Show less" : "Show more stats"}
-        </button>
-
-        {/* Expanded grid */}
-        {expanded && (
-          <div className="stat-grid-mobile" style={{ marginTop: "12px" }}>
-            {otherStats.map((s) => (
-              <div key={s.label} className={`stat-card stat-card-compact tone-${s.tone}`}>
-                <div className="stat-label">{s.label}</div>
-                <div className={`stat-value ${s.className}`}>{s.value}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div className="five-col mb-24">
+    <div className="summary-bar">
       {stats.map((s) => (
-        <div key={s.label} className={`stat-card tone-${s.tone}`}>
-          <div className="stat-label">{s.label}</div>
-          <div className={`stat-value ${s.className}`}>{s.value}</div>
+        <div key={s.label} className={`summary-bar-item tone-${s.tone}`}>
+          <div className="summary-bar-label">{s.label}</div>
+          <div className={`summary-bar-value ${s.className}`}>{s.value}</div>
         </div>
       ))}
     </div>
@@ -1195,6 +1139,7 @@ function ComparisonChart({ simulations, metricKey, metric, projYears }) {
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("income");
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // holds sim object pending deletion
   // Default is light mode. The attribute is set here (during the state
   // initializer, before first paint) rather than only in an effect, so a
   // returning user with "dark" saved doesn't see a flash of the light
@@ -1582,12 +1527,7 @@ export default function App() {
     if (simulations.length <= 1) return;
     const target = simulations.find((s) => s.id === id);
     if (!target) return;
-    if (
-      window.confirm(
-        `Delete “${target.name || "this simulation"}”? This cannot be undone.`,
-      ) === false
-    )
-      return;
+
     const remaining = simulations.filter((s) => s.id !== id);
     const nextActiveId =
       id === activeSimulationId ? remaining[0].id : activeSimulationId;
@@ -1929,7 +1869,7 @@ export default function App() {
                 className="ft-sim-tab-delete"
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteSimulation(sim.id);
+                  setDeleteConfirm(sim);
                 }}
                 role="button"
                 aria-label={`Delete ${sim.name || `Simulation ${index + 1}`}`}
@@ -2001,9 +1941,9 @@ export default function App() {
       {/* ── LEFT SIDEBAR (desktop) ── */}
       <nav className="ft-sidebar">{renderSidebarContent()}</nav>
 
-      {/* ── MAIN CONTENT ── */}
-      <div className="ft-main">
-        {/* Mobile top header — contains brand + hamburger */}
+      {/* ── RIGHT COLUMN: header (mobile only) + scrolling content ── */}
+      <div className="ft-right-col">
+        {/* Mobile top header — in normal flow, sits above ft-main */}
         <header className="ft-mobile-header">
           <span className="ft-mobile-header-brand">FirePhin</span>
           <button
@@ -2017,6 +1957,8 @@ export default function App() {
           </button>
         </header>
 
+      {/* ── MAIN CONTENT ── */}
+      <div className="ft-main">
         {/* Mobile sidebar backdrop */}
         {mobileSidebarOpen && (
           <div
@@ -2503,80 +2445,45 @@ export default function App() {
         {/* OUTLOOK */}
         {tab === "outlook" && (
           <>
-            <Summary calc={calc} />
-            <div>
-              {/* Desktop: 5-col stat grid */}
-              <div className="five-col mb-18 outlook-five-col">
+            {/* Unified snapshot card — current cashflow on top row, projected accounts below */}
+            <div className="outlook-snapshot-card">
+              {/* Row 1: current monthly cashflow */}
+              <div className="outlook-snapshot-section-label">Monthly cashflow</div>
+              <div className="outlook-snapshot-row">
                 {[
-                  {
-                    label: "Roth IRA",
-                    value: calc.proj.roth,
-                    sub: `${rothRate}%/yr`,
-                    className: "u-text-accent",
-                    tone: "accent",
-                  },
-                  {
-                    label: "401k",
-                    value: calc.proj.k401,
-                    sub: "incl. match",
-                    className: "u-text-yellow",
-                    tone: "yellow",
-                  },
-                  {
-                    label: "Brokerage",
-                    value: calc.proj.brokerage,
-                    sub: `${brokerageRate}%/yr`,
-                    className: "u-text-green",
-                    tone: "green",
-                  },
-                  {
-                    label: "Cash Reserve",
-                    value: calc.proj.cash,
-                    sub: `${cashRate}% APY`,
-                    className: "u-text-green",
-                    tone: "green",
-                  },
-                  {
-                    label: "Total",
-                    value: calc.proj.total,
-                    sub: `age ${finalAge}`,
-                    className: "u-text-accent",
-                    tone: "accent",
-                  },
+                  { label: "Take-home / mo", value: fmt(calc.netMonthly), className: "u-text-green", tone: "green" },
+                  { label: "Monthly expenses", value: fmt(calc.totalExpenses), className: "u-text-red", tone: "red" },
+                  { label: "After expenses", value: fmt(calc.afterExpenses), className: calc.afterExpenses >= 0 ? "u-text-green" : "u-text-red", tone: calc.afterExpenses >= 0 ? "green" : "red" },
+                  { label: "Investing / mo", value: fmt(calc.totalInvesting), className: "u-text-accent", tone: "accent" },
+                  { label: "Cash surplus / mo", value: fmt(calc.leftoverMonthly), className: calc.leftoverMonthly >= 0 ? "u-text-green" : "u-text-red", tone: calc.leftoverMonthly >= 0 ? "green" : "red" },
                 ].map((s) => (
-                  <div
-                    key={s.label}
-                    className={`stat-card is-lg tone-${s.tone}`}
-                  >
-                    <div className="stat-label">{s.label}</div>
-
-                    <div className={`stat-value is-lg ${s.className}`}>
-                      {fmt(s.value)}
-                    </div>
-
-                    <div className="stat-sub">{s.sub}</div>
+                  <div key={s.label} className={`outlook-snapshot-cell tone-${s.tone}`}>
+                    <div className="outlook-snapshot-label">{s.label}</div>
+                    <div className={`outlook-snapshot-value ${s.className}`}>{s.value}</div>
                   </div>
                 ))}
               </div>
 
-              {/* Mobile: all 5 projected values in one compact combined card */}
-              <div className="outlook-stats-combined mb-18">
-                <div className="outlook-stats-combined-grid">
-                  {[
-                    { label: "Roth IRA", value: calc.proj.roth, sub: `${rothRate}%/yr`, className: "u-text-accent" },
-                    { label: "401k", value: calc.proj.k401, sub: "incl. match", className: "u-text-yellow" },
-                    { label: "Brokerage", value: calc.proj.brokerage, sub: `${brokerageRate}%/yr`, className: "u-text-green" },
-                    { label: "Cash Reserve", value: calc.proj.cash, sub: `${cashRate}% APY`, className: "u-text-green" },
-                    { label: "Total", value: calc.proj.total, sub: `age ${finalAge}`, className: "u-text-accent" },
-                  ].map((s) => (
-                    <div key={s.label} className="outlook-stat-mini">
-                      <div className="outlook-stat-mini-label">{s.label}</div>
-                      <div className={`outlook-stat-mini-value ${s.className}`}>{fmt(s.value)}</div>
-                      <div className="outlook-stat-mini-sub">{s.sub}</div>
-                    </div>
-                  ))}
-                </div>
+              {/* Row 2: projected account balances */}
+              <div className="outlook-snapshot-section-label">Projected balances · age {finalAge}</div>
+              <div className="outlook-snapshot-row">
+                {[
+                  { label: "Roth IRA", value: fmt(calc.proj.roth), sub: `${rothRate}%/yr`, className: "u-text-accent", tone: "accent" },
+                  { label: "401k", value: fmt(calc.proj.k401), sub: "incl. match", className: "u-text-yellow", tone: "yellow" },
+                  { label: "Brokerage", value: fmt(calc.proj.brokerage), sub: `${brokerageRate}%/yr`, className: "u-text-green", tone: "green" },
+                  { label: "Cash Reserve", value: fmt(calc.proj.cash), sub: `${cashRate}% APY`, className: "u-text-green", tone: "green" },
+                  { label: "Total", value: fmt(calc.proj.total), sub: `age ${finalAge}`, className: "u-text-accent", tone: "accent" },
+                ].map((s) => (
+                  <div key={s.label} className={`outlook-snapshot-cell tone-${s.tone}`}>
+                    <div className="outlook-snapshot-label">{s.label}</div>
+                    <div className={`outlook-snapshot-value ${s.className}`}>{s.value}</div>
+                    {s.sub && <div className="outlook-snapshot-sub">{s.sub}</div>}
+                  </div>
+                ))}
               </div>
+            </div>
+
+            <div>
 
               {/* NET WORTH BENCHMARK + MILESTONES side by side — after stat grid */}
               <div className="two-col">
@@ -2703,7 +2610,32 @@ export default function App() {
             </div>
           </>
         )}
-      </div>
+      </div>{/* ft-main */}
+      {deleteConfirm && (
+        <div className="modal-backdrop" onClick={() => setDeleteConfirm(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-title">Delete simulation?</div>
+            <div className="modal-body">
+              <strong>{deleteConfirm.name || "This simulation"}</strong> will be permanently removed.
+            </div>
+            <div className="modal-actions">
+              <button className="modal-btn is-cancel" onClick={() => setDeleteConfirm(null)}>
+                Cancel
+              </button>
+              <button
+                className="modal-btn is-delete"
+                onClick={() => {
+                  deleteSimulation(deleteConfirm.id);
+                  setDeleteConfirm(null);
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>{/* ft-right-col */}
     </div>
   );
 }
