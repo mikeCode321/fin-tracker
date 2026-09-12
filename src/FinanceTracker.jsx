@@ -15,10 +15,10 @@ const MAX_SIMULATIONS = 5;
 // These are intentionally kept in one place so they can be replaced with
 // updated Federal Reserve SCF data later.
 const NET_WORTH_BENCHMARKS = [
-  { minAge: 18, maxAge: 29, p25: 1000, p50: 10200, p75: 54800, p90: 189000 },
-  { minAge: 30, maxAge: 34, p25: 7000, p50: 35700, p75: 135000, p90: 350000 },
-  { minAge: 35, maxAge: 39, p25: 12000, p50: 67000, p75: 250000, p90: 600000 },
-  { minAge: 40, maxAge: 44, p25: 20000, p50: 134000, p75: 400000, p90: 950000 },
+  { minAge: 18, maxAge: 29, p25: 1000,   p50: 10200,  p75: 54800,   p90: 189000,  p99: 800000   },
+  { minAge: 30, maxAge: 34, p25: 7000,   p50: 35700,  p75: 135000,  p90: 350000,  p99: 1200000  },
+  { minAge: 35, maxAge: 39, p25: 12000,  p50: 67000,  p75: 250000,  p90: 600000,  p99: 2000000  },
+  { minAge: 40, maxAge: 44, p25: 20000,  p50: 134000, p75: 400000,  p90: 950000,  p99: 3500000  },
   {
     minAge: 45,
     maxAge: 49,
@@ -26,6 +26,7 @@ const NET_WORTH_BENCHMARKS = [
     p50: 180000,
     p75: 500000,
     p90: 1200000,
+    p99: 4800000,
   },
   {
     minAge: 50,
@@ -34,6 +35,7 @@ const NET_WORTH_BENCHMARKS = [
     p50: 290000,
     p75: 750000,
     p90: 1600000,
+    p99: 6500000,
   },
   {
     minAge: 55,
@@ -42,6 +44,7 @@ const NET_WORTH_BENCHMARKS = [
     p50: 380000,
     p75: 1000000,
     p90: 2200000,
+    p99: 9000000,
   },
   {
     minAge: 60,
@@ -50,6 +53,7 @@ const NET_WORTH_BENCHMARKS = [
     p50: 490000,
     p75: 1300000,
     p90: 2800000,
+    p99: 11000000,
   },
   {
     minAge: 65,
@@ -58,6 +62,7 @@ const NET_WORTH_BENCHMARKS = [
     p50: 580000,
     p75: 1500000,
     p90: 3200000,
+    p99: 12500000,
   },
   {
     minAge: 75,
@@ -66,6 +71,7 @@ const NET_WORTH_BENCHMARKS = [
     p50: 550000,
     p75: 1400000,
     p90: 3000000,
+    p99: 11500000,
   },
 ];
 
@@ -93,7 +99,8 @@ function getAgeBenchmark(age) {
 }
 
 function getNetWorthStatus(value, benchmark) {
-  if (value >= benchmark.p90) return "90th+";
+  if (value >= benchmark.p99) return "99th+";
+  if (value >= benchmark.p90) return "90th–99th";
   if (value >= benchmark.p75) return "75th–90th";
   if (value >= benchmark.p50) return "50th–75th";
   if (value >= benchmark.p25) return "25th–50th";
@@ -1793,7 +1800,7 @@ export default function App() {
   // Maps the 4-bucket net-worth-vs-benchmark status into the same
   // healthy/watch/low status vocabulary the rest of the app uses for color.
   const netWorthStatusBucket = (status) =>
-    status === "90th+" || status === "75th–90th"
+    status === "99th+" || status === "90th–99th" || status === "75th–90th"
       ? "healthy"
       : status === "50th–75th"
         ? "watch"
@@ -2009,7 +2016,7 @@ export default function App() {
             <Summary calc={calc} />
             <div className="income-grid">
               {/* Left: Income & Identity */}
-              <Card title="Income & Identity">
+              <Card title="Income">
                 <NumInput
                   label="Actual monthly take-home"
                   value={actualTakeHome}
@@ -2041,8 +2048,7 @@ export default function App() {
                   />
 
                   <InfoBox variant="muted">
-                    Take-home grows {salaryGrowth}%/yr in projections, matching
-                    gross salary growth.
+                    For simplification, net and gross pay grows at {salaryGrowth}%/yr
                   </InfoBox>
                 </div>
               </Card>
@@ -2524,11 +2530,12 @@ export default function App() {
                       { label: "50th", curr: currentBenchmark.p50, proj: finalBenchmark.p50 },
                       { label: "75th", curr: currentBenchmark.p75, proj: finalBenchmark.p75 },
                       { label: "90th", curr: currentBenchmark.p90, proj: finalBenchmark.p90 },
+                      { label: "99th", curr: currentBenchmark.p99, proj: finalBenchmark.p99, isTop: true },
                     ].map((row) => (
-                      <div key={row.label} className="benchmark-pct-row">
-                        <span className="u-text-muted">{row.label}</span>
-                        <span>{fmt(row.curr)}</span>
-                        <span>{fmt(row.proj)}</span>
+                      <div key={row.label} className={`benchmark-pct-row${row.isTop ? " is-p99" : ""}`}>
+                        <span className={row.isTop ? "u-text-accent" : "u-text-muted"}>{row.label}</span>
+                        <span className={row.isTop ? "u-text-accent" : ""}>{fmt(row.curr)}</span>
+                        <span className={row.isTop ? "u-text-accent" : ""}>{fmt(row.proj)}</span>
                       </div>
                     ))}
                   </div>

@@ -1471,6 +1471,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+.benchmark-pct-row.is-p99 {
+  font-weight: 700;
+  border-bottom-color: transparent;
+  margin-top: 2px;
+  padding-top: 7px;
+  border-top: 1px dashed var(--accent);
+}
+
 /* ─── OUTLOOK — COMPACT MILESTONE ROWS ─────────────────────────────────── */
 .milestone-stack {
   display: flex;
