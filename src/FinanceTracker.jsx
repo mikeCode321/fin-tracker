@@ -299,7 +299,10 @@ const NumInput = ({
         type="number"
         value={value}
         placeholder={placeholder}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => {
+          const val = e.target.value;
+          onChange(val === "" ? "" : Number(val));
+        }}
         className="num-field-input"
       />
 
@@ -403,12 +406,13 @@ function ExpenseRow({ item, onChange, onRemove }) {
           type="number"
           className="expense-amount-input"
           value={item.amount}
-          onChange={(e) =>
+          onChange={(e) => {
+            const val = e.target.value;
             onChange({
               ...item,
-              amount: Number(e.target.value),
-            })
-          }
+              amount: val === "" ? "" : Number(val),
+            });
+          }}
         />
       </div>
 
@@ -1168,6 +1172,15 @@ export default function App() {
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+
+  const handleMaxOutContributions = () => {
+    // Max out Roth IRA: annual limit / 12 for monthly contribution
+    setRothContrib(ROTH_LIMIT / 12);
+
+    // Max out 401k: calculate percentage needed to reach annual limit
+    const k401NeededPct = (K401_LIMIT / grossSalary) * 100;
+    setK401Pct(Math.min(k401NeededPct, 50)); // Cap at 50% for UI slider
+  };
 
   const [actualTakeHome, setActualTakeHome] = useState(5200);
   const [grossSalary, setGrossSalary] = useState(85000);
@@ -2358,6 +2371,13 @@ export default function App() {
                 </div>
 
                 <Progress value={calc.rothAnnual} max={ROTH_LIMIT} />
+
+                <button
+                  className="max-out-btn"
+                  onClick={() => setRothContrib(ROTH_LIMIT / 12)}
+                >
+                  Max Out Roth IRA
+                </button>
 
                 <div style={{ marginTop: 14 }}>
                   <NumInput
