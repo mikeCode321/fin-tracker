@@ -297,7 +297,7 @@ const NumInput = ({
 
       <input
         type="number"
-        inputMode="numeric"
+        inputMode="decimal"
         value={value}
         placeholder={placeholder}
         onChange={(e) => {
@@ -405,7 +405,7 @@ function ExpenseRow({ item, onChange, onRemove }) {
 
         <input
           type="number"
-          inputMode="numeric"
+          inputMode="decimal"
           className="expense-amount-input"
           value={item.amount}
           onChange={(e) => {
