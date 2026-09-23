@@ -1226,6 +1226,9 @@ export default function App() {
   // New: inflation rate (applied to all projections)
   const [inflationRate, setInflationRate] = useState(3);
 
+  // New: toggle for inflation adjustment
+  const [adjustForInflation, setAdjustForInflation] = useState(false);
+
   const [age, setAge] = useState(30);
 
   const [k401Pct, setK401Pct] = useState(6);
