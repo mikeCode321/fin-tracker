@@ -3,14 +3,14 @@
 /*
   Palette: Warm Slate (dark) / Warm Stone (light)
   ─────────────────────────────────────────────────
-  Accent  — muted teal-sage  (#5E9E8A)   calm, trustworthy, not electric
-  Green   — dusty sage       (#6BAF83)   positive without neon
-  Red     — terracotta rose  (#C0665A)   soft alarm, not panic
-  Yellow  — warm amber       (#C49A3C)   watch state, warm not garish
+  Accent   muted teal-sage  (#5E9E8A)   calm, trustworthy, not electric
+  Green    dusty sage       (#6BAF83)   positive without neon
+  Red      terracotta rose  (#C0665A)   soft alarm, not panic
+  Yellow   warm amber       (#C49A3C)   watch state, warm not garish
 
   Dark surfaces are warm-tinted slate (not blue-black) so the eye
   feels less fatigued during long planning sessions.
-  Light surfaces are warm off-white / stone — never pure white.
+  Light surfaces are warm off-white / stone  never pure white.
 */
 
 /* ── LIGHT (default) ─────────────────────────────────────────────────
@@ -34,11 +34,11 @@
 /* ── DARK ─────────────────────────────────────────────────────────── */
 [data-theme="dark"] {
   --bg:          #131109;          /* warm near-black, not blue */
-  --card:        #211E19;          /* lifted warm slate — more lift from bg */
+  --card:        #211E19;          /* lifted warm slate  more lift from bg */
   --border:      #3D3730;          /* clearly visible warm divider */
   --accent:      #5E9E8A;          /* muted teal-sage */
   --accent-dim:  rgba(94,158,138,0.15);
-  --text:        #EBE5DD;          /* warm off-white — slightly brighter */
+  --text:        #EBE5DD;          /* warm off-white  slightly brighter */
   --muted:       #837970;          /* warm stone gray */
   --input-bg:    #17140F;          /* sunken input, distinct from card */
   --green:       #6BAF83;          /* dusty sage green */

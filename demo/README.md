@@ -39,7 +39,7 @@ ffmpeg -i demo/output/starbucks-student.mp4 \
 
 Edit `scenarios/student.js` to change the profile numbers, captions, or the
 before/after comparison values. The selectors in `scripts/record.js` under
-`SEL` may need updating if FirePhin's DOM changes — add `data-testid`
+`SEL` may need updating if FirePhin's DOM changes  add `data-testid`
 attributes to the key inputs for the most stable targeting.
 
 ## Selector tuning

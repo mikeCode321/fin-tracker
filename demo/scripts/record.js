@@ -1,6 +1,6 @@
 // demo/scripts/record.js
 // ─────────────────────────────────────────────────────────────────────────────
-// FirePhin demo recorder — desktop 1440×900
+// FirePhin demo recorder  desktop 1440×900
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { chromium }      from 'playwright';
@@ -32,7 +32,7 @@ const T = {
   zoomOut:     460,
 };
 
-// Fast-fill timing — used for expense rows 3–5 + new additions
+// Fast-fill timing  used for expense rows 3–5 + new additions
 const FAST = {
   afterFill:   100,
   typeDelay:     8,
@@ -141,7 +141,7 @@ async function fillByLabel(page, labelText, value, { zoom = false } = {}) {
   const sel = `.num-field:has(.field-label:text-is("${labelText}")) input.num-field-input`;
   const loc = page.locator(sel).first();
   try { await loc.waitFor({ state: 'visible', timeout: 8_000 }); }
-  catch { console.warn(`    ⚠ label not found: "${labelText}" — skipping`); return; }
+  catch { console.warn(`    ⚠ label not found: "${labelText}"  skipping`); return; }
   const box = await loc.boundingBox();
   const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
   if (zoom) await zoomTo(page, cx, cy, 1.35);
@@ -189,7 +189,7 @@ async function scrollToSel(page, selector) {
 /**
  * Update an existing expense row in-place by DOM index.
  * Pass `fast: true` for the 3-up rows to halve timing.
- * Name and category are optional — only amount is required.
+ * Name and category are optional  only amount is required.
  */
 async function updateExpenseRow(page, index, { name, category, amount } = {}, fast = false) {
   const delay  = fast ? FAST.typeDelay  : T.typeDelay;
@@ -227,7 +227,7 @@ async function updateExpenseRow(page, index, { name, category, amount } = {}, fa
 }
 
 /**
- * Add a new expense row at the bottom. Always fast — called after the
+ * Add a new expense row at the bottom. Always fast  called after the
  * user has already seen the first two rows filled at normal speed.
  */
 async function addExpense(page, name, category, amount) {
@@ -262,7 +262,7 @@ async function addExpense(page, name, category, amount) {
 
 async function run() {
   console.log('🎬  FirePhin demo recorder');
-  console.log(`🖥️   Desktop — ${DEVICE.width}×${DEVICE.height} @${DEVICE.deviceScaleFactor}×`);
+  console.log(`🖥️   Desktop  ${DEVICE.width}×${DEVICE.height} @${DEVICE.deviceScaleFactor}×`);
   console.log(`📁  ${OUTPUT_DIR}\n`);
 
   const browser = await chromium.launch({
@@ -293,7 +293,7 @@ async function run() {
   await fillByLabel(page, 'Current age',              p.age,             { zoom: true });
 
   // ── 3. Expenses tab ──────────────────────────────────────────────────────
-  console.log('  [3/10] Expenses tab — updating defaults + adding 2 new rows …');
+  console.log('  [3/10] Expenses tab  updating defaults + adding 2 new rows …');
   await goToTab(page, 'Expenses');
   await sleep(400);
 
@@ -322,8 +322,8 @@ async function run() {
   // Brief pause so the expense summary is visible before moving on
   await sleep(700);
 
-  // ── 4. Investments tab — Simulation 1 (baseline: $50 brokerage) ──────────
-  console.log('  [4/10] Investments tab — Sim 1 baseline contributions …');
+  // ── 4. Investments tab  Simulation 1 (baseline: $50 brokerage) ──────────
+  console.log('  [4/10] Investments tab  Sim 1 baseline contributions …');
   await goToTab(page, 'Investments');
   await fillInCard(page, 'Roth IRA', 'Monthly contribution', scenario.accounts.rothIRA, { zoom: true });
   await scrollToSel(page, '.card:has(.card-title:text("Taxable Brokerage"))');
@@ -339,8 +339,8 @@ async function run() {
   await clickAt(page, addSimBox.x + addSimBox.width / 2, addSimBox.y + addSimBox.height / 2);
   await sleep(600); // let the new sim become active and re-render
 
-  // ── 6. Investments tab — Simulation 2 (bump brokerage to $150) ───────────
-  console.log(`  [6/10] Investments — Sim 2 brokerage $${scenario.comparisonDemo.before} → $${scenario.comparisonDemo.after} …`);
+  // ── 6. Investments tab  Simulation 2 (bump brokerage to $150) ───────────
+  console.log(`  [6/10] Investments  Sim 2 brokerage $${scenario.comparisonDemo.before} → $${scenario.comparisonDemo.after} …`);
   await goToTab(page, 'Investments');
   await scrollToSel(page, '.card:has(.card-title:text("Taxable Brokerage"))');
   await fillInCard(page, 'Taxable Brokerage', 'Monthly contribution', scenario.comparisonDemo.after, { zoom: true });
@@ -354,8 +354,8 @@ async function run() {
   await zoomReset(page);
   await sleep(500);
 
-  // ── 8. Compare tab — both simulations ────────────────────────────────────
-  console.log('  [8/10] Compare tab — Sim 1 vs Sim 2 …');
+  // ── 8. Compare tab  both simulations ────────────────────────────────────
+  console.log('  [8/10] Compare tab  Sim 1 vs Sim 2 …');
   await goToTab(page, 'Compare');
   await sleep(600);
   await zoomTo(page, DEVICE.width / 2, 440, 1.25);

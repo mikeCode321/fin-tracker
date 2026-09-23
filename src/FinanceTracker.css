@@ -1,7 +1,7 @@
-/* ─── APP SHELL — sidebar + scrolling content ──────────────────────────── */
+/* ─── APP SHELL  sidebar + scrolling content ──────────────────────────── */
 .ft-shell {
   display: flex;
-  height: 100dvh;       /* exact viewport height — no overflow at shell level */
+  height: 100dvh;       /* exact viewport height  no overflow at shell level */
   overflow: hidden;    /* sidebar stays put; only ft-main scrolls */
   background: var(--bg);
 }
@@ -30,7 +30,7 @@
 }
 
 /* ─── MOBILE TOP HEADER ────────────────────────────────────────────────── */
-/* In normal flow above ft-main — never position:fixed, so it can never
+/* In normal flow above ft-main  never position:fixed, so it can never
    overlap scrolled content. */
 .ft-mobile-header {
   display: none;
@@ -985,7 +985,7 @@
   overflow: hidden;
 }
 
-/* Subtle tinted background per semantic tone — no slivers, no borders,
+/* Subtle tinted background per semantic tone  no slivers, no borders,
    just a faint wash that reads as distinct at a glance. */
 .stat-card.tone-green {
   background: color-mix(in srgb, var(--green) 7%, var(--card));
@@ -1009,7 +1009,7 @@
 }
 
 /* ─── COMPACT SUMMARY BAR (replaces expand/show-more pattern) ──────────── */
-/* A slim single-line row of values — shown on ALL screen sizes above the
+/* A slim single-line row of values  shown on ALL screen sizes above the
    tab content. No toggle, no "show more", no separate mobile grid. */
 .summary-bar {
   display: flex;
@@ -1033,7 +1033,7 @@
   border-right: none;
 }
 
-/* Faint tinted background per tone — same system as stat-card.tone-* */
+/* Faint tinted background per tone  same system as stat-card.tone-* */
 .summary-bar-item.tone-green {
   background: color-mix(in srgb, var(--green) 6%, var(--card));
 }
@@ -1147,7 +1147,7 @@
   white-space: nowrap;
 }
 
-/* ─── OUTLOOK SNAPSHOT CARD — combined current + projected ─────────────── */
+/* ─── OUTLOOK SNAPSHOT CARD  combined current + projected ─────────────── */
 /* One card with two labeled sections separated by a divider.
    Always visible on all breakpoints; replaces both the summary bar
    and the five-col stat grid for the outlook tab. */
@@ -1415,7 +1415,7 @@
   color: var(--muted);
 }
 
-/* ─── INVEST TAB — 3-COL ACCOUNT GRID ─────────────────────────────────── */
+/* ─── INVEST TAB  3-COL ACCOUNT GRID ─────────────────────────────────── */
 .invest-account-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1433,7 +1433,7 @@
   }
 }
 
-/* ─── OUTLOOK — COMPACT BENCHMARK TABLE ────────────────────────────────── */
+/* ─── OUTLOOK  COMPACT BENCHMARK TABLE ────────────────────────────────── */
 .benchmark-header-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1504,7 +1504,7 @@
   border-bottom: none;
 }
 
-/* ─── OUTLOOK — COMPACT MILESTONE ROWS ─────────────────────────────────── */
+/* ─── OUTLOOK  COMPACT MILESTONE ROWS ─────────────────────────────────── */
 .milestone-stack {
   display: flex;
   flex-direction: column;

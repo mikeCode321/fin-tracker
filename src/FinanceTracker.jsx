@@ -8,7 +8,7 @@ const ROTH_LIMIT = 7500;
 const K401_LIMIT = 23000;
 
 // Simulations are capped so the comparison view and header tab strip stay
-// usable — raise this if you need more scenarios at once.
+// usable  raise this if you need more scenarios at once.
 const MAX_SIMULATIONS = 5;
 
 // Approximate U.S. household net-worth reference points by age.
@@ -76,7 +76,7 @@ const NET_WORTH_BENCHMARKS = [
 ];
 
 function fmt(n, decimals = 0) {
-  if (isNaN(n) || !isFinite(n)) return "$—";
+  if (isNaN(n) || !isFinite(n)) return "$";
 
   const neg = n < 0;
   return (
@@ -160,6 +160,7 @@ function projectAll({
   k401Pct,
   employerMatch: employerMatchPct,
   employerMatchMax,
+  inflationRate,
 }) {
   let roth = Number(initRoth) || 0;
   let k401 = Number(initK401) || 0;
@@ -201,15 +202,35 @@ function projectAll({
 
     const total = roth + k401 + brokerage + cash;
 
+    // Apply inflation adjustment (always active if inflationRate > 0)
+    let displayRoth = roth;
+    let displayK401 = k401;
+    let displayBrokerage = brokerage;
+    let displayCash = cash;
+    let displayTotal = total;
+    let displayGross = gross;
+    let displayTakeHome = takeHomeAnnual / 12;
+
+    if (inflationRate > 0) {
+      const inflationFactor = Math.pow(1 + inflationRate, y);
+      displayRoth = roth / inflationFactor;
+      displayK401 = k401 / inflationFactor;
+      displayBrokerage = brokerage / inflationFactor;
+      displayCash = cash / inflationFactor;
+      displayTotal = total / inflationFactor;
+      displayGross = gross / inflationFactor;
+      displayTakeHome = (takeHomeAnnual / 12) / inflationFactor;
+    }
+
     snapshots.push({
       year: y,
-      gross,
-      takeHome: takeHomeAnnual / 12,
-      roth,
-      k401,
-      brokerage,
-      cash,
-      total,
+      gross: displayGross,
+      takeHome: displayTakeHome,
+      roth: displayRoth,
+      k401: displayK401,
+      brokerage: displayBrokerage,
+      cash: displayCash,
+      total: displayTotal,
       annualRoth: yearlyRoth,
       annualK401: employee401k,
       employerMatch: employerMatchAmount,
@@ -218,12 +239,17 @@ function projectAll({
     });
   }
 
+  // Apply the same deflator to the final headline values so the Outlook
+  // stat cards are also in real (today's) dollars when inflation is active.
+  const finalInflationFactor =
+    inflationRate > 0 ? Math.pow(1 + inflationRate, years) : 1;
+
   return {
-    roth,
-    k401,
-    brokerage,
-    cash,
-    total: roth + k401 + brokerage + cash,
+    roth:      roth      / finalInflationFactor,
+    k401:      k401      / finalInflationFactor,
+    brokerage: brokerage / finalInflationFactor,
+    cash:      cash      / finalInflationFactor,
+    total:     (roth + k401 + brokerage + cash) / finalInflationFactor,
     snapshots,
   };
 }
@@ -480,7 +506,7 @@ function SnapshotTable({ snapshots }) {
 // Builds a projection for a saved simulation using the app-wide projection
 // length (years), so every simulation reflects the same "Simulation length"
 // slider value rather than a value frozen into the simulation itself.
-function buildProjectionFromSimulation(sim, years) {
+function buildProjectionFromSimulation(sim, years, inflationRate) {
   const expenses = Array.isArray(sim.expenses) ? sim.expenses : [];
   const totalExpenses = expenses.reduce(
     (sum, e) => sum + Math.max(Number(e.amount) || 0, 0),
@@ -533,6 +559,7 @@ function buildProjectionFromSimulation(sim, years) {
     k401Pct: Number(sim.k401Pct) || 0,
     employerMatch: Number(sim.employerMatch) || 0,
     employerMatchMax: Number(sim.employerMatchMax) || 0,
+    inflationRate: inflationRate,
   });
 }
 
@@ -550,7 +577,7 @@ function CollapsibleYearTable({
       <div className="year-table-shell">
         <button className="year-table-toggle" onClick={() => setOpen((v) => !v)}>
           <span className="year-table-toggle-label">
-            Year-by-year breakdown — {projYears} year projection
+            Year-by-year breakdown  {projYears} year projection
           </span>
           <span className={`year-table-caret${open ? " is-open" : ""}`}>▾</span>
         </button>
@@ -647,7 +674,7 @@ function FloatingHealthPanel({
       label: "Emergency",
       value: `${Math.min(calc.emergencyFunding * 100, 999).toFixed(0)}%`,
       target: "6 months",
-      note: `Cash + surplus vs ${calc.emergencyTarget ? fmt(calc.emergencyTarget) : "—"} target`,
+      note: `Cash + surplus vs ${calc.emergencyTarget ? fmt(calc.emergencyTarget) : ""} target`,
       status:
         calc.emergencyFunding >= 1
           ? "healthy"
@@ -753,7 +780,7 @@ function FloatingHealthPanel({
   );
 }
 
-// Compact summary bar — all 5 values in a single segmented row.
+// Compact summary bar  all 5 values in a single segmented row.
 // No expand/toggle; scales gracefully to mobile via CSS wrapping.
 function Summary({ calc }) {
   const stats = [
@@ -802,15 +829,15 @@ function Summary({ calc }) {
 }
 
 // ─── SUGGESTIONS STRIP ────────────────────────────────────────────────────────
-// Replaces the "What Should I Change?" full Card — lives as a slim strip
+// Replaces the "What Should I Change?" full Card  lives as a slim strip
 function SuggestionsStrip({ calc, pct }) {
   const hints = [];
   if (calc.housingTakeHomeRatio > 0.3)
-    hints.push(`🏠 Housing at ${pct(calc.housingTakeHomeRatio)} of take-home — target < 30%`);
+    hints.push(`🏠 Housing at ${pct(calc.housingTakeHomeRatio)} of take-home  target < 30%`);
   if (calc.investmentGrossRatio < 0.15)
-    hints.push(`📈 Investing ${pct(calc.investmentGrossRatio)} of gross — target ≥ 15%`);
+    hints.push(`📈 Investing ${pct(calc.investmentGrossRatio)} of gross  target ≥ 15%`);
   if (calc.expenseRatio > 0.5)
-    hints.push(`💰 Expenses at ${pct(calc.expenseRatio)} of take-home — high`);
+    hints.push(`💰 Expenses at ${pct(calc.expenseRatio)} of take-home  high`);
   if (calc.emergencyFunding < 1)
     hints.push(
       `🛟 Emergency fund ${Math.min(Math.round(calc.emergencyFunding * 100), 999)}% of 6-month target`,
@@ -819,7 +846,7 @@ function SuggestionsStrip({ calc, pct }) {
   if (hints.length === 0) {
     return (
       <div className="suggestions-strip is-all-good">
-        <span>✓ Plan looks strong across all major ratios — keep growing income and investments.</span>
+        <span>✓ Plan looks strong across all major ratios  keep growing income and investments.</span>
       </div>
     );
   }
@@ -848,6 +875,7 @@ function CompareView({
   toggleCompareSimulation,
   toggleCompareMetric,
   projYears,
+  inflationRate,
 }) {
   const [tableOpen, setTableOpen] = useState(false);
   const selectedIds = compareSimulationIds.length
@@ -859,7 +887,7 @@ function CompareView({
   const getSeriesValue = (snapshot, key) => snapshot?.[key] ?? 0;
   const snapshots = selectedSims
     .reduce((all, sim) => {
-      buildProjectionFromSimulation(sim, projYears).snapshots.forEach(
+      buildProjectionFromSimulation(sim, projYears, inflationRate / 100).snapshots.forEach(
         (snapshot) => {
           if (!all.some((x) => x.year === snapshot.year))
             all.push({ year: snapshot.year });
@@ -928,6 +956,7 @@ function CompareView({
               metricKey={graphMetricKey}
               metric={metricMap[graphMetricKey]}
               projYears={projYears}
+              inflationRate={inflationRate / 100}
             />
           </Card>
 
@@ -937,7 +966,7 @@ function CompareView({
               onClick={() => setTableOpen((v) => !v)}
             >
               <span className="year-table-toggle-label">
-                Comparison table{finalYear ? ` — through year ${finalYear}` : ""}
+                Comparison table{finalYear ? `  through year ${finalYear}` : ""}
               </span>
               <span className={`year-table-caret${tableOpen ? " is-open" : ""}`}>
                 ▾
@@ -947,7 +976,7 @@ function CompareView({
               <div className="year-table-body">
                 <div style={{ marginBottom: 12 }}>
                   <div className="u-text-muted" style={{ fontSize: 12, marginBottom: 10 }}>
-                    Table metrics — choose which columns appear in the table below.
+                    Table metrics  choose which columns appear in the table below.
                   </div>
                   <div className="chip-row">
                     {compareMetrics.map((metric) => {
@@ -991,6 +1020,7 @@ function CompareView({
                               const snapshot = buildProjectionFromSimulation(
                                 sim,
                                 projYears,
+                                inflationRate / 100,
                               ).snapshots.find((s) => s.year === row.year);
                               return (
                                 <td key={`${sim.id}-${key}-${row.year}`} className="is-metric">
@@ -1030,14 +1060,14 @@ const SIM_COLORS = [
   "#a78bfa",
 ];
 
-function ComparisonChart({ simulations, metricKey, metric, projYears }) {
+function ComparisonChart({ simulations, metricKey, metric, projYears, inflationRate }) {
   const width = 960;
   const height = 420;
   const pad = { left: 78, right: 24, top: 24, bottom: 42 };
   const innerW = width - pad.left - pad.right;
   const innerH = height - pad.top - pad.bottom;
   const getSnapshots = (sim) =>
-    buildProjectionFromSimulation(sim, projYears).snapshots;
+    buildProjectionFromSimulation(sim, projYears, inflationRate).snapshots;
   const maxYear = Math.max(
     1,
     ...simulations.flatMap((sim) => getSnapshots(sim).map((x) => x.year)),
@@ -1193,6 +1223,9 @@ export default function App() {
   // New: optionally grow contributions with salary.
   const [contributionGrowth, setContributionGrowth] = useState(true);
 
+  // New: inflation rate (applied to all projections)
+  const [inflationRate, setInflationRate] = useState(3);
+
   const [age, setAge] = useState(30);
 
   const [k401Pct, setK401Pct] = useState(6);
@@ -1245,7 +1278,7 @@ export default function App() {
   const [initCash, setInitCash] = useState(0);
   const [cashRate, setCashRate] = useState(4);
 
-  // Global projection setting — applies to every simulation, including in
+  // Global projection setting  applies to every simulation, including in
   // comparisons, rather than being saved per-simulation.
   const [projYears, setProjYears] = useState(20);
 
@@ -1255,7 +1288,7 @@ export default function App() {
   // Each simulation keeps a complete copy of its inputs, so scenarios can be
   // branched, switched, and referenced without overwriting one another.
   // Projection length is intentionally NOT part of a simulation's saved
-  // state — it's a single global control (see `projYears` above) so that
+  // state  it's a single global control (see `projYears` above) so that
   // changing it applies consistently to every simulation everywhere,
   // including side-by-side comparisons.
   const defaultExpenses = [
@@ -1299,6 +1332,7 @@ export default function App() {
     grossSalary,
     salaryGrowth,
     contributionGrowth,
+    inflationRate,
     age,
     k401Pct,
     employerMatch,
@@ -1314,6 +1348,7 @@ export default function App() {
     brokerageRate,
     initCash,
     cashRate,
+    inflationRate,
   });
 
   const applySimulation = (sim) => {
@@ -1323,6 +1358,7 @@ export default function App() {
     setGrossSalary(sim.grossSalary ?? 85000);
     setSalaryGrowth(sim.salaryGrowth ?? 3);
     setContributionGrowth(sim.contributionGrowth ?? true);
+    setInflationRate(sim.inflationRate ?? 3);
     setAge(sim.age ?? 30);
     setK401Pct(sim.k401Pct ?? 6);
     setEmployerMatch(sim.employerMatch ?? 3);
@@ -1338,7 +1374,7 @@ export default function App() {
     setBrokerageRate(sim.brokerageRate ?? 7);
     setInitCash(sim.initCash ?? 0);
     setCashRate(sim.cashRate ?? 4);
-    // Note: projYears is intentionally left untouched here — it's global.
+    // Note: projYears is intentionally left untouched here  it's global.
   };
 
   const freshSimulation = (id, name) => ({
@@ -1349,6 +1385,7 @@ export default function App() {
     grossSalary: 85000,
     salaryGrowth: 3,
     contributionGrowth: true,
+    inflationRate: 3,
     age: 30,
     k401Pct: 6,
     employerMatch: 3,
@@ -1456,6 +1493,7 @@ export default function App() {
     grossSalary,
     salaryGrowth,
     contributionGrowth,
+    inflationRate,
     age,
     k401Pct,
     employerMatch,
@@ -1729,6 +1767,7 @@ export default function App() {
       k401Pct,
       employerMatch,
       employerMatchMax,
+      inflationRate: inflationRate / 100,
     });
 
     return {
@@ -1783,6 +1822,8 @@ export default function App() {
     initCash,
     cashRate,
     projYears,
+    inflationRate,
+    adjustForInflation,
   ]);
 
   const currentBenchmark = getAgeBenchmark(age);
@@ -1939,6 +1980,30 @@ export default function App() {
             onChange={(e) => setProjYears(Number(e.target.value))}
           />
           <div className="ft-sidebar-age-range">Age {age} → {finalAge}</div>
+
+          <div className="ft-sidebar-proj-row" style={{ marginTop: 16 }}>
+            <span className="ft-projection-slider-label">Inflation</span>
+            <span className="ft-projection-value">{inflationRate}%</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={10}
+            step={0.5}
+            value={inflationRate}
+            onChange={(e) => setInflationRate(Number(e.target.value))}
+          />
+
+          <div className="toggle-row" style={{ marginTop: 8 }}>
+            <button
+              className={`toggle-btn${adjustForInflation ? " is-active" : ""}`}
+              onClick={() => setAdjustForInflation(!adjustForInflation)}
+            >
+              {adjustForInflation
+                ? "Inflation: ON"
+                : "Inflation: OFF"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1967,7 +2032,7 @@ export default function App() {
 
       {/* ── RIGHT COLUMN: header (mobile only) + scrolling content ── */}
       <div className="ft-right-col">
-        {/* Mobile top header — in normal flow, sits above ft-main */}
+        {/* Mobile top header  in normal flow, sits above ft-main */}
         <header className="ft-mobile-header">
           <span className="ft-mobile-header-brand">FirePhin</span>
           <button
@@ -1991,7 +2056,7 @@ export default function App() {
           />
         )}
 
-        {/* Mobile sidebar drawer — same content as the desktop sidebar,
+        {/* Mobile sidebar drawer  same content as the desktop sidebar,
             plus a close button, and every action also closes the drawer. */}
         <nav className={`ft-sidebar-drawer ${mobileSidebarOpen ? "is-open" : ""}`}>
           {renderSidebarContent(() => setMobileSidebarOpen(false))}
@@ -2025,6 +2090,7 @@ export default function App() {
             toggleCompareSimulation={toggleCompareSimulation}
             toggleCompareMetric={toggleCompareMetric}
             projYears={projYears}
+            inflationRate={inflationRate}
           />
         )}
 
@@ -2299,7 +2365,7 @@ export default function App() {
           <>
             <Summary calc={calc} />
 
-            {/* Cash Reserve inputs + Waterfall — at top for visibility */}
+            {/* Cash Reserve inputs + Waterfall  at top for visibility */}
             <div className="two-col">
               <Card title="Cash Reserve">
                 <NumInput
@@ -2475,7 +2541,7 @@ export default function App() {
         {/* OUTLOOK */}
         {tab === "outlook" && (
           <>
-            {/* Unified snapshot card — current cashflow on top row, projected accounts below */}
+            {/* Unified snapshot card  current cashflow on top row, projected accounts below */}
             <div className="outlook-snapshot-card">
               {/* Row 1: current monthly cashflow */}
               <div className="outlook-snapshot-section-label">Monthly cashflow</div>
@@ -2515,7 +2581,7 @@ export default function App() {
 
             <div>
 
-              {/* NET WORTH BENCHMARK + MILESTONES side by side — after stat grid */}
+              {/* NET WORTH BENCHMARK + MILESTONES side by side  after stat grid */}
               <div className="two-col">
                 <Card title="Net Worth vs. Age Benchmark" accent>
                   {/* Current vs Projected in a compact 2-col header */}
@@ -2565,7 +2631,7 @@ export default function App() {
                   </div>
 
                   <InfoBox variant="muted">
-                    Approximate U.S. household net-worth reference points — directional context only.
+                    Approximate U.S. household net-worth reference points  directional context only.
                   </InfoBox>
                 </Card>
 
