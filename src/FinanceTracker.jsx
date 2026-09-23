@@ -833,11 +833,11 @@ function Summary({ calc }) {
 function SuggestionsStrip({ calc, pct }) {
   const hints = [];
   if (calc.housingTakeHomeRatio > 0.3)
-    hints.push(`🏠 Housing at ${pct(calc.housingTakeHomeRatio)} of take-home  target < 30%`);
+    hints.push(`Housing at ${pct(calc.housingTakeHomeRatio)} of take-home  target < 30%`);
   if (calc.investmentGrossRatio < 0.15)
-    hints.push(`📈 Investing ${pct(calc.investmentGrossRatio)} of gross  target ≥ 15%`);
+    hints.push(`Investing ${pct(calc.investmentGrossRatio)} of gross  target ≥ 15%`);
   if (calc.expenseRatio > 0.5)
-    hints.push(`💰 Expenses at ${pct(calc.expenseRatio)} of take-home  high`);
+    hints.push(`Expenses at ${pct(calc.expenseRatio)} of take-home  high`);
   if (calc.emergencyFunding < 1)
     hints.push(
       `🛟 Emergency fund ${Math.min(Math.round(calc.emergencyFunding * 100), 999)}% of 6-month target`,
