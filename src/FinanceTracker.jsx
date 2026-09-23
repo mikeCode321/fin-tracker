@@ -1996,17 +1996,6 @@ export default function App() {
             value={inflationRate}
             onChange={(e) => setInflationRate(Number(e.target.value))}
           />
-
-          <div className="toggle-row" style={{ marginTop: 8 }}>
-            <button
-              className={`toggle-btn${adjustForInflation ? " is-active" : ""}`}
-              onClick={() => setAdjustForInflation(!adjustForInflation)}
-            >
-              {adjustForInflation
-                ? "Inflation: ON"
-                : "Inflation: OFF"}
-            </button>
-          </div>
         </div>
       </div>
 
